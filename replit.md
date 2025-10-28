@@ -30,5 +30,10 @@ An intelligent email processing and automation system that monitors incoming ema
 ## Dependencies
 - Flask: Web framework
 - PostgreSQL: Database for configurations and drafts
-- AgentMail: Email management
-- OpenAI: AI-powered email analysis
+- OpenAI: AI-powered email analysis (requires API key)
+- IMAP: Direct email integration (requires email credentials)
+
+## Important Notes
+- User declined managed integrations for AgentMail and OpenAI
+- App uses direct API integration with email providers via IMAP and OpenAI API keys
+- All credentials stored as environment secrets
