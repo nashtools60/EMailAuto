@@ -22,7 +22,9 @@ An intelligent email processing and automation system that monitors incoming ema
 
 ## Recent Changes
 - 2025-10-28: Initial project setup with Flask, database schema design
-- 2025-10-28: Integrated AgentMail and OpenAI for email and AI processing
+- 2025-10-28: Integrated Gemini 2.0 Flash for AI processing
+- 2025-10-28: Built complete email automation system with web UI
+- 2025-10-28: Implemented IMAP email monitoring, AI classification, and draft generation
 
 ## User Preferences
 - None specified yet

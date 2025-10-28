@@ -138,20 +138,30 @@ def process_emails():
     Fetches new emails, processes them, and creates drafts
     """
     try:
-        # Get email credentials from system settings
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('imap_server', 'email_user', 'email_password')")
-            settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
+        # SECURITY: Get email credentials from environment variables (preferred) or database fallback
+        imap_server = os.environ.get('EMAIL_IMAP_SERVER')
+        email_user = os.environ.get('EMAIL_USER')
+        email_password = os.environ.get('EMAIL_PASSWORD')
         
-        if not all(k in settings for k in ['imap_server', 'email_user', 'email_password']):
-            return jsonify({'success': False, 'error': 'Email credentials not configured'}), 400
+        # Fallback to database if env vars not set
+        if not all([imap_server, email_user, email_password]):
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('imap_server', 'email_user', 'email_password')")
+                settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
+            
+            imap_server = imap_server or settings.get('imap_server')
+            email_user = email_user or settings.get('email_user')
+            email_password = email_password or settings.get('email_password')
+        
+        if not all([imap_server, email_user, email_password]):
+            return jsonify({'success': False, 'error': 'Email credentials not configured. Please set EMAIL_IMAP_SERVER, EMAIL_USER, and EMAIL_PASSWORD environment secrets.'}), 400
         
         # Initialize email service
         email_service = EmailService(
-            settings['imap_server'],
-            settings['email_user'],
-            settings['email_password']
+            imap_server,
+            email_user,
+            email_password
         )
         
         # Fetch new emails
@@ -226,7 +236,7 @@ def process_emails():
                     RETURNING id
                 ''', (
                     email_data['id'],
-                    settings['email_user'],
+                    email_user,
                     sender_email,
                     draft.get('subject'),
                     draft.get('body'),
@@ -256,6 +266,9 @@ def process_emails():
                     priority_sentiment.get('sentiment'),
                     validation_result
                 ))
+            
+            # Mark email as read so it won't be reprocessed
+            email_service.mark_as_read(email_data['id'])
             
             processed.append({
                 'email_id': email_data['id'],
@@ -351,9 +364,9 @@ def manage_settings():
             cursor.execute('SELECT setting_key, setting_value FROM system_settings')
             settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
             
-            # Don't expose password in response
+            # SECURITY: Never expose credentials in API responses
             if 'email_password' in settings:
-                settings['email_password'] = '***'
+                settings['email_password'] = '***REDACTED***'
             
             return jsonify(settings)
     
