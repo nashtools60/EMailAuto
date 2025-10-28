@@ -59,6 +59,39 @@ body[data-theme="red"] {
     --tab-bg: #fef2f2;
 }
 
+body[data-theme="yellow"] {
+    --primary-color: #FABE00;
+    --secondary-color: #F59E0B;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #fef9e7;
+    --tab-bg: #fffbeb;
+}
+
+body[data-theme="brown"] {
+    --primary-color: #E97132;
+    --secondary-color: #D97706;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #fff7ed;
+    --tab-bg: #fff7ed;
+}
+
+body[data-theme="orange"] {
+    --primary-color: #f97316;
+    --secondary-color: #ea580c;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #fff7ed;
+    --tab-bg: #ffedd5;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
@@ -235,14 +268,14 @@ header h1 {
 }
 
 .config-item {
-    background: white;
+    background: var(--card-bg);
     padding: 10px 15px;
     margin-bottom: 8px;
     border-radius: 5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 
 .delete-btn {
@@ -263,7 +296,7 @@ header h1 {
     display: block;
     margin-bottom: 5px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-color);
 }
 
 .form-group input,
@@ -271,25 +304,28 @@ header h1 {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 1em;
     font-family: inherit;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 .form-group small {
     display: block;
     margin-top: 5px;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
     font-size: 0.85em;
 }
 
 .draft-card {
-    background: white;
+    background: var(--card-bg);
     padding: 20px;
     margin-bottom: 15px;
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 
 .draft-header {
@@ -297,12 +333,13 @@ header h1 {
     justify-content: space-between;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .draft-meta {
     font-size: 0.9em;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
 }
 
 .badge {
