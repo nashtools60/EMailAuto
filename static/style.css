@@ -4,24 +4,80 @@
     box-sizing: border-box;
 }
 
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #e8e8e8;
+    --tab-bg: #f5f5f5;
+}
+
+body[data-theme="dark"] {
+    --primary-color: #4c63d2;
+    --secondary-color: #5a3a7d;
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: #2a2a2a;
+    --border-color: #404040;
+    --hover-bg: #3a3a3a;
+    --tab-bg: #252525;
+}
+
+body[data-theme="blue"] {
+    --primary-color: #0077be;
+    --secondary-color: #00a8e8;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #e8f4f8;
+    --tab-bg: #f0f8ff;
+}
+
+body[data-theme="green"] {
+    --primary-color: #10b981;
+    --secondary-color: #059669;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #ecfdf5;
+    --tab-bg: #f0fdf4;
+}
+
+body[data-theme="red"] {
+    --primary-color: #ef4444;
+    --secondary-color: #dc2626;
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --hover-bg: #fef2f2;
+    --tab-bg: #fef2f2;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     min-height: 100vh;
     padding: 20px;
+    color: var(--text-color);
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
+    background: var(--card-bg);
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     overflow: hidden;
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     padding: 30px;
     text-align: center;
@@ -39,8 +95,8 @@ header h1 {
 
 .tabs {
     display: flex;
-    background: #f5f5f5;
-    border-bottom: 2px solid #e0e0e0;
+    background: var(--tab-bg);
+    border-bottom: 2px solid var(--border-color);
 }
 
 .tab-btn {
@@ -51,18 +107,18 @@ header h1 {
     cursor: pointer;
     font-size: 1em;
     font-weight: 500;
-    color: #666;
+    color: var(--text-color);
     transition: all 0.3s;
 }
 
 .tab-btn:hover {
-    background: #e8e8e8;
+    background: var(--hover-bg);
 }
 
 .tab-btn.active {
-    background: white;
-    color: #667eea;
-    border-bottom: 3px solid #667eea;
+    background: var(--card-bg);
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
 }
 
 .tab-content {
@@ -82,7 +138,7 @@ header h1 {
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     padding: 25px;
     border-radius: 10px;
@@ -101,26 +157,27 @@ header h1 {
 }
 
 .card {
-    background: #f9f9f9;
+    background: var(--tab-bg);
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 20px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 
 .card h2, .card h3 {
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 15px;
 }
 
 .help-text {
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
     font-size: 0.9em;
     margin-bottom: 15px;
 }
 
 .btn {
-    background: #667eea;
+    background: var(--primary-color);
     color: white;
     padding: 10px 20px;
     border: none;
@@ -131,12 +188,12 @@ header h1 {
 }
 
 .btn:hover {
-    background: #5568d3;
+    opacity: 0.9;
     transform: translateY(-2px);
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     padding: 12px 25px;
     font-weight: 600;
 }

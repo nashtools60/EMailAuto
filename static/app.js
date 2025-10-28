@@ -1,5 +1,24 @@
 const API_BASE = '/api';
 
+// Theme functionality
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'default';
+    document.body.setAttribute('data-theme', savedTheme);
+    const themeSelector = document.getElementById('theme-selector');
+    if (themeSelector) {
+        themeSelector.value = savedTheme;
+    }
+}
+
+function changeTheme() {
+    const theme = document.getElementById('theme-selector').value;
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+}
+
+// Load theme on page load
+document.addEventListener('DOMContentLoaded', loadTheme);
+
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');

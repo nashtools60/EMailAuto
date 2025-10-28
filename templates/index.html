@@ -205,6 +205,21 @@
                 <p class="help-text">Your Gemini API key is configured via environment variables (GEMINI_API_KEY)</p>
                 <div id="gemini-status"></div>
             </div>
+
+            <div class="card">
+                <h3>Color Scheme</h3>
+                <p class="help-text">Choose your preferred color theme</p>
+                <div class="form-group">
+                    <label>Theme:</label>
+                    <select id="theme-selector" onchange="changeTheme()">
+                        <option value="default">Purple (Default)</option>
+                        <option value="dark">Dark Mode</option>
+                        <option value="blue">Ocean Blue</option>
+                        <option value="green">Nature Green</option>
+                        <option value="red">Sunset Red</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 
