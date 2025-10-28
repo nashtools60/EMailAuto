@@ -49,7 +49,11 @@ See the detailed [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete instructions.
 
 **Blacklist (Blocked Senders)**:
 - Add email addresses or domains to automatically reject
+- Choose a category for each blocked sender:
+  - **Unsubscribe**: For legitimate senders you want to unsubscribe from
+  - **Permanent Delete**: For spam or malicious senders to block permanently
 - Examples: `spam@example.com`, `@spammydomain.com`
+- Category badges display next to each entry for easy identification
 
 ### 3. Create Email Templates (Optional)
 Create response templates for common email categories:

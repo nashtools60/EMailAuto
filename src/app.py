@@ -46,7 +46,8 @@ def manage_config():
                     result[config_type] = []
                 result[config_type].append({
                     'key': config['config_key'],
-                    'value': config['config_value']
+                    'value': config['config_value'],
+                    'category': config.get('category')
                 })
             
             return jsonify(result)
@@ -56,15 +57,16 @@ def manage_config():
         config_type = data.get('config_type')
         config_key = data.get('config_key')
         config_value = data.get('config_value')
+        category = data.get('category')
         
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO configurations (config_type, config_key, config_value)
-                VALUES (%s, %s, %s)
+                INSERT INTO configurations (config_type, config_key, config_value, category)
+                VALUES (%s, %s, %s, %s)
                 ON CONFLICT (config_type, config_key)
-                DO UPDATE SET config_value = %s, updated_at = CURRENT_TIMESTAMP
-            ''', (config_type, config_key, config_value, config_value))
+                DO UPDATE SET config_value = %s, category = %s, updated_at = CURRENT_TIMESTAMP
+            ''', (config_type, config_key, config_value, category, config_value, category))
             conn.commit()
         
         return jsonify({'success': True, 'message': 'Configuration updated'})

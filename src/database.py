@@ -34,6 +34,7 @@ def init_db():
                 config_type VARCHAR(50) NOT NULL,
                 config_key VARCHAR(255) NOT NULL,
                 config_value TEXT NOT NULL,
+                category VARCHAR(100),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(config_type, config_key)

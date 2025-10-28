@@ -192,12 +192,15 @@ async function loadConfigList(type, containerId) {
             return;
         }
         
-        container.innerHTML = configs[type].map(item => `
-            <div class="config-item">
-                <span>${item.value}</span>
-                <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
-            </div>
-        `).join('');
+        container.innerHTML = configs[type].map(item => {
+            const categoryBadge = item.category ? `<span class="badge" style="margin-left: 10px; background: #ef4444; color: white;">${item.category}</span>` : '';
+            return `
+                <div class="config-item">
+                    <span>${item.value}${categoryBadge}</span>
+                    <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+                </div>
+            `;
+        }).join('');
     } catch (error) {
         container.innerHTML = '<p style="color: red;">Error loading</p>';
     }
@@ -224,6 +227,33 @@ async function addConfig(type) {
         loadConfigList(type, `${type}-items`);
     } catch (error) {
         alert('Error adding entry');
+    }
+}
+
+async function addBlacklist() {
+    const input = document.getElementById('blacklist-input');
+    const categorySelect = document.getElementById('blacklist-category');
+    const value = input.value.trim();
+    const category = categorySelect.value;
+    
+    if (!value) return;
+    
+    try {
+        await fetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                config_type: 'blacklist',
+                config_key: value,
+                config_value: value,
+                category: category
+            })
+        });
+        
+        input.value = '';
+        loadConfigList('blacklist', 'blacklist-items');
+    } catch (error) {
+        alert('Error adding blacklist entry');
     }
 }
 

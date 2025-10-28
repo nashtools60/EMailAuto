@@ -42,7 +42,11 @@ Your Gemini API key is already configured: ✓ `GEMINI_API_KEY`
 
 4. Add Blocked Senders (Blacklist):
    - Add spam or unwanted email addresses
-   - Example: `spam@example.com`
+   - Select a category for each entry:
+     - **Unsubscribe**: For legitimate senders you want to stop receiving emails from
+     - **Permanent Delete**: For spam, phishing, or malicious senders
+   - Example: `spam@example.com` with category "Permanent Delete"
+   - Each entry will display a red badge showing its category
 
 ### Step 4: Create Email Templates (Optional)
 

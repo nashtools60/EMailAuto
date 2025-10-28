@@ -75,7 +75,11 @@
                 <div id="blacklist-items"></div>
                 <div class="input-group">
                     <input type="text" id="blacklist-input" placeholder="spam@example.com">
-                    <button onclick="addConfig('blacklist')" class="btn">Add Block</button>
+                    <select id="blacklist-category" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="Unsubscribe">Unsubscribe</option>
+                        <option value="Permanent Delete">Permanent Delete</option>
+                    </select>
+                    <button onclick="addBlacklist()" class="btn">Add Block</button>
                 </div>
             </div>
         </div>
