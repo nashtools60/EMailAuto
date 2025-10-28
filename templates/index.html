@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Automation Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 Email Automation Dashboard</h1>
+            <p class="subtitle">AI-powered email processing with human oversight</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="showTab('drafts')">Review Drafts</button>
+            <button class="tab-btn" onclick="showTab('config')">Configuration</button>
+            <button class="tab-btn" onclick="showTab('templates')">Templates</button>
+            <button class="tab-btn" onclick="showTab('settings')">Settings</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Pending Drafts</h3>
+                    <div class="stat-value" id="stat-pending">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Approved</h3>
+                    <div class="stat-value" id="stat-approved">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Processed</h3>
+                    <div class="stat-value" id="stat-total">-</div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <button onclick="processEmails()" class="btn btn-primary">Process New Emails</button>
+                <span id="process-status"></span>
+            </div>
+
+            <div class="card">
+                <h2>Email Categories</h2>
+                <div id="category-stats"></div>
+            </div>
+        </div>
+
+        <!-- Review Drafts Tab -->
+        <div id="drafts" class="tab-content">
+            <h2>Review Email Drafts</h2>
+            <div id="drafts-list"></div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="config" class="tab-content">
+            <h2>Email Processing Configuration</h2>
+            
+            <div class="card">
+                <h3>VIP Senders (Whitelist)</h3>
+                <p class="help-text">Add email addresses or domains for high-priority senders</p>
+                <div id="whitelist-items"></div>
+                <div class="input-group">
+                    <input type="text" id="whitelist-input" placeholder="email@example.com or @company.com">
+                    <button onclick="addConfig('whitelist')" class="btn">Add VIP</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Blocked Senders (Blacklist)</h3>
+                <p class="help-text">Add email addresses or domains to automatically reject</p>
+                <div id="blacklist-items"></div>
+                <div class="input-group">
+                    <input type="text" id="blacklist-input" placeholder="spam@example.com">
+                    <button onclick="addConfig('blacklist')" class="btn">Add Block</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates Tab -->
+        <div id="templates" class="tab-content">
+            <h2>Email Templates</h2>
+            <button onclick="showTemplateForm()" class="btn btn-primary">Create New Template</button>
+            
+            <div id="template-form" class="card" style="display: none; margin-top: 20px;">
+                <h3>Template Editor</h3>
+                <div class="form-group">
+                    <label>Template Name:</label>
+                    <input type="text" id="template-name" placeholder="e.g., Sales Inquiry Response">
+                </div>
+                <div class="form-group">
+                    <label>Category:</label>
+                    <select id="template-category">
+                        <option value="Sales Inquiry">Sales Inquiry</option>
+                        <option value="Technical Support">Technical Support</option>
+                        <option value="Invoice/Billing">Invoice/Billing</option>
+                        <option value="HR Request">HR Request</option>
+                        <option value="General Inquiry">General Inquiry</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subject Template (optional):</label>
+                    <input type="text" id="template-subject" placeholder="Re: {original_subject}">
+                </div>
+                <div class="form-group">
+                    <label>Body Template:</label>
+                    <textarea id="template-body" rows="6" placeholder="Dear {customer_name},&#10;&#10;Thank you for your inquiry..."></textarea>
+                </div>
+                <button onclick="saveTemplate()" class="btn btn-primary">Save Template</button>
+                <button onclick="hideTemplateForm()" class="btn">Cancel</button>
+            </div>
+
+            <div id="templates-list" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <h2>Email Account Settings</h2>
+            <div class="card">
+                <p class="help-text">Configure your email account for monitoring incoming emails</p>
+                
+                <div class="form-group">
+                    <label>IMAP Server:</label>
+                    <input type="text" id="setting-imap" placeholder="imap.gmail.com">
+                    <small>Examples: imap.gmail.com, outlook.office365.com</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="setting-email" placeholder="your-email@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email Password / App Password:</label>
+                    <input type="password" id="setting-password" placeholder="••••••••">
+                    <small>For Gmail, use an App Password. Never use your main password.</small>
+                </div>
+                
+                <button onclick="saveSettings()" class="btn btn-primary">Save Settings</button>
+            </div>
+
+            <div class="card">
+                <h3>Gemini API Configuration</h3>
+                <p class="help-text">Your Gemini API key is configured via environment variables (GEMINI_API_KEY)</p>
+                <div id="gemini-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
