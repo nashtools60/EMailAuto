@@ -392,11 +392,11 @@ async function saveSettings() {
 
 // Email Accounts Management
 const IMAP_PRESETS = {
-    gmail: { server: 'imap.gmail.com', port: 993 },
-    outlook: { server: 'outlook.office365.com', port: 993 },
-    yahoo: { server: 'imap.mail.yahoo.com', port: 993 },
-    icloud: { server: 'imap.mail.me.com', port: 993 },
-    aol: { server: 'imap.aol.com', port: 993 }
+    gmail: { server: 'imap.gmail.com', port: 993, domains: ['gmail.com', 'googlemail.com'] },
+    outlook: { server: 'outlook.office365.com', port: 993, domains: ['outlook.com', 'hotmail.com', 'live.com'] },
+    yahoo: { server: 'imap.mail.yahoo.com', port: 993, domains: ['yahoo.com', 'ymail.com', 'rocketmail.com'] },
+    icloud: { server: 'imap.mail.me.com', port: 993, domains: ['icloud.com', 'me.com', 'mac.com'] },
+    aol: { server: 'imap.aol.com', port: 993, domains: ['aol.com'] }
 };
 
 function applyIMAPPreset() {
@@ -477,10 +477,22 @@ async function saveAccount() {
     const port = parseInt(document.getElementById('account-imap-port').value);
     const password = document.getElementById('account-password').value;
     const isActive = document.getElementById('account-active').checked;
+    const preset = document.getElementById('imap-preset').value;
     
     if (!name || !email || !server || !password) {
         alert('Please fill in all required fields');
         return;
+    }
+    
+    // Validate email domain matches the selected platform
+    if (preset && preset !== '' && IMAP_PRESETS[preset]) {
+        const emailDomain = email.split('@')[1]?.toLowerCase();
+        const allowedDomains = IMAP_PRESETS[preset].domains;
+        
+        if (!emailDomain || !allowedDomains.includes(emailDomain)) {
+            alert(`Email domain does not match the selected platform. Expected: @${allowedDomains.join(' or @')}`);
+            return;
+        }
     }
     
     try {

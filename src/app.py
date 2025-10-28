@@ -451,6 +451,28 @@ def manage_email_accounts():
     elif request.method == 'POST':
         data = request.json
         email_address = data['email_address']
+        imap_server = data['imap_server']
+        
+        # Validate email domain matches the IMAP server platform
+        email_domain = email_address.split('@')[-1].lower() if '@' in email_address else ''
+        
+        # Platform domain mappings
+        platform_domains = {
+            'imap.gmail.com': ['gmail.com', 'googlemail.com'],
+            'outlook.office365.com': ['outlook.com', 'hotmail.com', 'live.com'],
+            'imap.mail.yahoo.com': ['yahoo.com', 'ymail.com', 'rocketmail.com'],
+            'imap.mail.me.com': ['icloud.com', 'me.com', 'mac.com'],
+            'imap.aol.com': ['aol.com']
+        }
+        
+        # Check if the IMAP server is a known platform and validate domain
+        if imap_server in platform_domains:
+            allowed_domains = platform_domains[imap_server]
+            if email_domain not in allowed_domains:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Email domain does not match the selected platform. Expected: @{" or @".join(allowed_domains)}'
+                }), 400
         
         # Check if email exists in whitelist or blacklist
         with get_db() as conn:
