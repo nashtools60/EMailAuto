@@ -466,7 +466,8 @@ function clearAccountForm() {
     document.getElementById('account-imap-port').value = '993';
     document.getElementById('account-password').value = '';
     document.getElementById('account-active').checked = true;
-    document.getElementById('imap-preset').value = '';
+    document.getElementById('imap-preset').value = 'gmail';
+    applyIMAPPreset(); // Apply Gmail preset by default
 }
 
 async function saveAccount() {
