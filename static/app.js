@@ -426,7 +426,7 @@ async function loadAccounts() {
                     <div>
                         <h3 style="margin: 0 0 10px 0;">${account.account_name}</h3>
                         <p style="margin: 5px 0;"><strong>Email:</strong> ${account.email_address}</p>
-                        <p style="margin: 5px 0;"><strong>IMAP Server:</strong> ${account.imap_server}:${account.imap_port}</p>
+                        <p style="margin: 5px 0;"><strong>Mail Server:</strong> ${account.imap_server}:${account.imap_port}</p>
                         <p style="margin: 5px 0;">
                             <span class="badge" style="background: ${account.is_active ? '#10b981' : '#6b7280'}">
                                 ${account.is_active ? 'Active' : 'Inactive'}
