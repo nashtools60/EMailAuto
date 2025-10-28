@@ -503,7 +503,7 @@ async function saveAccount() {
             hideAccountForm();
             loadAccounts();
         } else {
-            alert('Error: ' + result.error);
+            alert(result.message || 'Error saving account');
         }
     } catch (error) {
         alert('Error saving account: ' + error.message);

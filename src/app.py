@@ -450,6 +450,31 @@ def manage_email_accounts():
     
     elif request.method == 'POST':
         data = request.json
+        email_address = data['email_address']
+        
+        # Check if email exists in whitelist or blacklist
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Check whitelist
+            cursor.execute('''
+                SELECT COUNT(*) as count FROM configurations 
+                WHERE config_type = 'whitelist' AND config_key = %s
+            ''', (email_address,))
+            in_whitelist = cursor.fetchone()['count'] > 0
+            
+            # Check blacklist
+            cursor.execute('''
+                SELECT COUNT(*) as count FROM configurations 
+                WHERE config_type = 'blacklist' AND config_key = %s
+            ''', (email_address,))
+            in_blacklist = cursor.fetchone()['count'] > 0
+            
+            if in_whitelist:
+                return jsonify({'success': False, 'message': 'This email address already exists in the Whitelist'}), 400
+            
+            if in_blacklist:
+                return jsonify({'success': False, 'message': 'This email address already exists in the Blacklist'}), 400
         
         encrypted_password = encrypt_password(data['password'])
         
