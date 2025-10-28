@@ -13,6 +13,7 @@ function showTab(tabName) {
     
     if (tabName === 'dashboard') loadStats();
     if (tabName === 'drafts') loadDrafts();
+    if (tabName === 'accounts') loadAccounts();
     if (tabName === 'config') loadConfig();
     if (tabName === 'templates') loadTemplates();
     if (tabName === 'settings') loadSettings();
@@ -87,6 +88,7 @@ async function loadDrafts() {
                 <div class="draft-header">
                     <div>
                         <strong>To: ${draft.recipient_email}</strong>
+                        ${draft.account_name ? `<div class="draft-meta"><span class="badge" style="background: #3b82f6;">From: ${draft.account_name}</span></div>` : ''}
                         <div class="draft-meta">
                             <span class="badge badge-${draft.priority.toLowerCase()}">${draft.priority}</span>
                             <span class="badge badge-${draft.sentiment.toLowerCase()}">${draft.sentiment}</span>
@@ -385,6 +387,155 @@ async function saveSettings() {
         document.getElementById('setting-password').value = '';
     } catch (error) {
         alert('Error saving settings');
+    }
+}
+
+// Email Accounts Management
+const IMAP_PRESETS = {
+    gmail: { server: 'imap.gmail.com', port: 993 },
+    outlook: { server: 'outlook.office365.com', port: 993 },
+    yahoo: { server: 'imap.mail.yahoo.com', port: 993 },
+    icloud: { server: 'imap.mail.me.com', port: 993 },
+    aol: { server: 'imap.aol.com', port: 993 }
+};
+
+function applyIMAPPreset() {
+    const preset = document.getElementById('imap-preset').value;
+    if (preset && IMAP_PRESETS[preset]) {
+        document.getElementById('account-imap-server').value = IMAP_PRESETS[preset].server;
+        document.getElementById('account-imap-port').value = IMAP_PRESETS[preset].port;
+    }
+}
+
+async function loadAccounts() {
+    const container = document.getElementById('accounts-list');
+    container.innerHTML = '<div class="loading">Loading accounts...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts`);
+        const accounts = await response.json();
+        
+        if (accounts.length === 0) {
+            container.innerHTML = '<p class="help-text">No email accounts configured yet. Add one to start processing emails.</p>';
+            return;
+        }
+        
+        container.innerHTML = accounts.map(account => `
+            <div class="card" style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0 0 10px 0;">${account.account_name}</h3>
+                        <p style="margin: 5px 0;"><strong>Email:</strong> ${account.email_address}</p>
+                        <p style="margin: 5px 0;"><strong>IMAP Server:</strong> ${account.imap_server}:${account.imap_port}</p>
+                        <p style="margin: 5px 0;">
+                            <span class="badge" style="background: ${account.is_active ? '#10b981' : '#6b7280'}">
+                                ${account.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="toggleAccount(${account.id})" class="btn" style="padding: 8px 12px;">
+                            ${account.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button onclick="deleteAccount(${account.id}, '${account.account_name}')" class="delete-btn">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        container.innerHTML = '<p style="color: red;">Error loading accounts</p>';
+    }
+}
+
+function showAccountForm() {
+    document.getElementById('account-form').style.display = 'block';
+    clearAccountForm();
+}
+
+function hideAccountForm() {
+    document.getElementById('account-form').style.display = 'none';
+    clearAccountForm();
+}
+
+function clearAccountForm() {
+    document.getElementById('account-name').value = '';
+    document.getElementById('account-email').value = '';
+    document.getElementById('account-imap-server').value = '';
+    document.getElementById('account-imap-port').value = '993';
+    document.getElementById('account-password').value = '';
+    document.getElementById('account-active').checked = true;
+    document.getElementById('imap-preset').value = '';
+}
+
+async function saveAccount() {
+    const name = document.getElementById('account-name').value.trim();
+    const email = document.getElementById('account-email').value.trim();
+    const server = document.getElementById('account-imap-server').value.trim();
+    const port = parseInt(document.getElementById('account-imap-port').value);
+    const password = document.getElementById('account-password').value;
+    const isActive = document.getElementById('account-active').checked;
+    
+    if (!name || !email || !server || !password) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                account_name: name,
+                email_address: email,
+                imap_server: server,
+                imap_port: port,
+                password: password,
+                is_active: isActive
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideAccountForm();
+            loadAccounts();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error saving account: ' + error.message);
+    }
+}
+
+async function toggleAccount(accountId) {
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts/${accountId}/toggle`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            loadAccounts();
+        }
+    } catch (error) {
+        alert('Error toggling account');
+    }
+}
+
+async function deleteAccount(accountId, accountName) {
+    if (!confirm(`Are you sure you want to delete the account "${accountName}"?`)) {
+        return;
+    }
+    
+    try {
+        await fetch(`${API_BASE}/email-accounts/${accountId}`, {
+            method: 'DELETE'
+        });
+        
+        loadAccounts();
+    } catch (error) {
+        alert('Error deleting account');
     }
 }
 

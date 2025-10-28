@@ -5,10 +5,12 @@ A parameterized, automatic email processing agent with AI-powered classification
 ## Features
 
 ### Email Ingestion & Pre-processing
-- **Monitor Mailbox**: Continuously check for new emails via IMAP
-- **Sender Validation**: Whitelist (VIP senders) and blacklist management
+- **Multi-Account Support**: Manage and process emails from multiple email accounts (Gmail, Yahoo, Outlook, iCloud, AOL, etc.)
+- **Monitor Mailboxes**: Continuously check for new emails via IMAP across all active accounts
+- **Sender Validation**: Whitelist (VIP senders) and blacklist management with categories
 - **Content Normalization**: Remove HTML formatting, disclaimers, and reply chains
 - **Attachment Detection**: Identify and track email attachments
+- **Account Tracking**: Each draft is linked to the source email account
 
 ### AI Processing (Powered by Gemini 2.0 Flash)
 - **Email Classification**: Categorize emails (Sales Inquiry, Technical Support, Invoice/Billing, HR Request, etc.)
@@ -28,16 +30,19 @@ See the detailed [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete instructions.
 
 **Required Configuration:**
 
-1. **Email Credentials** (Store as Environment Secrets - Recommended):
-   - `EMAIL_IMAP_SERVER` - IMAP server (e.g., `imap.gmail.com`)
-   - `EMAIL_USER` - Your email address
-   - `EMAIL_PASSWORD` - App-specific password (NOT your main password)
+1. **Email Accounts** (Multiple accounts supported):
+   - Add email accounts through the "Email Accounts" tab
+   - Supports Gmail, Yahoo, Outlook, iCloud, AOL, and custom IMAP servers
+   - Each account requires: account name, email address, IMAP server, and password
+   - Use app-specific passwords for security (NOT your main password)
+   - Environment variables (`EMAIL_IMAP_SERVER`, `EMAIL_USER`, `EMAIL_PASSWORD`) automatically migrated to first account
 
 2. **Gemini API Key** (Already configured):
    - `GEMINI_API_KEY` - For AI processing
 
 **Getting Started:**
 - See SETUP_GUIDE.md for step-by-step instructions
+- Add your email accounts in the Email Accounts tab
 - Use app-specific passwords for security
 - Configure whitelist/blacklist in the Configuration tab
 
@@ -67,11 +72,12 @@ Create response templates for common email categories:
 ### Process Emails
 1. Click **"Process New Emails"** on the Dashboard
 2. The system will:
-   - Fetch unread emails from your inbox
+   - Fetch unread emails from all active email accounts
    - Validate senders against whitelist/blacklist
    - Normalize and clean email content
    - Use AI to classify, analyze priority/sentiment, and extract entities
-   - Generate draft responses
+   - Generate draft responses linked to the source account
+   - Mark emails as read to prevent reprocessing
 
 ### Review Drafts
 1. Go to the **Review Drafts** tab

@@ -7,6 +7,7 @@ import json
 from database import init_db, get_db
 from email_service import EmailService
 from ai_processor import classify_email, analyze_priority_sentiment, extract_entities, generate_draft_response
+from encryption import encrypt_password, decrypt_password
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 CORS(app)
@@ -137,152 +138,162 @@ def delete_template(template_id):
 def process_emails():
     """
     Manually trigger email processing
-    Fetches new emails, processes them, and creates drafts
+    Fetches new emails from all active accounts, processes them, and creates drafts
     """
     try:
-        # SECURITY: Get email credentials from environment variables (preferred) or database fallback
-        imap_server = os.environ.get('EMAIL_IMAP_SERVER')
-        email_user = os.environ.get('EMAIL_USER')
-        email_password = os.environ.get('EMAIL_PASSWORD')
-        
-        # Fallback to database if env vars not set
-        if not all([imap_server, email_user, email_password]):
-            with get_db() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('imap_server', 'email_user', 'email_password')")
-                settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
-            
-            imap_server = imap_server or settings.get('imap_server')
-            email_user = email_user or settings.get('email_user')
-            email_password = email_password or settings.get('email_password')
-        
-        if not all([imap_server, email_user, email_password]):
-            return jsonify({'success': False, 'error': 'Email credentials not configured. Please set EMAIL_IMAP_SERVER, EMAIL_USER, and EMAIL_PASSWORD environment secrets.'}), 400
-        
-        # Initialize email service
-        email_service = EmailService(
-            imap_server,
-            email_user,
-            email_password
-        )
-        
-        # Fetch new emails
-        new_emails = email_service.fetch_new_emails(limit=10)
-        
-        # Get whitelist and blacklist
+        # Get all active email accounts
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'whitelist'")
-            whitelist = [row['config_value'] for row in cursor.fetchall()]
-            
-            cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'blacklist'")
-            blacklist = [row['config_value'] for row in cursor.fetchall()]
+            cursor.execute('''
+                SELECT id, account_name, email_address, imap_server, imap_port, encrypted_password
+                FROM email_accounts 
+                WHERE is_active = TRUE
+                ORDER BY id
+            ''')
+            accounts = cursor.fetchall()
         
-        processed = []
+        if not accounts:
+            return jsonify({'success': False, 'error': 'No active email accounts configured. Please add an email account in the Email Accounts tab.'}), 400
         
-        for email_data in new_emails:
-            sender_email = email_data['sender_email']
-            
-            # Validate sender
-            validation_result = email_service.validate_sender(sender_email, whitelist, blacklist)
-            
-            if validation_result == 'blacklisted':
-                # Skip blacklisted emails
+        all_processed = []
+        
+        # Process emails from each account
+        for account in accounts:
+            try:
+                # Decrypt password
+                password = decrypt_password(account['encrypted_password'])
+                
+                # Initialize email service for this account
+                email_service = EmailService(
+                    account['imap_server'],
+                    account['email_address'],
+                    password
+                )
+                
+                # Fetch new emails
+                new_emails = email_service.fetch_new_emails(limit=10)
+                
+                # Get whitelist and blacklist
                 with get_db() as conn:
                     cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO email_processing_log 
-                        (email_id, sender_email, subject, received_at, processing_status, validation_result)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    ''', (
-                        email_data['id'],
-                        sender_email,
-                        email_data['subject'],
-                        email_data['date'],
-                        'rejected',
-                        validation_result
-                    ))
-                continue
-            
-            # Normalize content
-            normalized_content = email_service.normalize_content(
-                email_data.get('body_html', ''),
-                email_data.get('body_text', '')
-            )
-            
-            # AI Processing
-            classification = classify_email(email_data['subject'], normalized_content)
-            priority_sentiment = analyze_priority_sentiment(
-                email_data['subject'],
-                normalized_content,
-                sender_email
-            )
-            entities = extract_entities(email_data['subject'], normalized_content)
-            
-            # Generate draft response
-            draft = generate_draft_response(
-                email_data['subject'],
-                normalized_content,
-                sender_email,
-                classification.get('category', 'General Inquiry')
-            )
-            
-            # Save draft to database
-            with get_db() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO email_drafts 
-                    (original_email_id, sender_email, recipient_email, subject, body, 
-                     classification, priority, sentiment, extracted_data, original_content, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                ''', (
-                    email_data['id'],
-                    email_user,
-                    sender_email,
-                    draft.get('subject'),
-                    draft.get('body'),
-                    classification.get('category'),
-                    priority_sentiment.get('priority'),
-                    priority_sentiment.get('sentiment'),
-                    json.dumps(entities),
-                    normalized_content,
-                    'pending'
-                ))
-                draft_id = cursor.fetchone()['id']
+                    cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'whitelist'")
+                    whitelist = [row['config_value'] for row in cursor.fetchall()]
+                    
+                    cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'blacklist'")
+                    blacklist = [row['config_value'] for row in cursor.fetchall()]
                 
-                # Log processing
-                cursor.execute('''
-                    INSERT INTO email_processing_log 
-                    (email_id, sender_email, subject, received_at, processing_status, 
-                     classification, priority, sentiment, validation_result)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''', (
-                    email_data['id'],
-                    sender_email,
-                    email_data['subject'],
-                    email_data['date'],
-                    'processed',
-                    classification.get('category'),
-                    priority_sentiment.get('priority'),
-                    priority_sentiment.get('sentiment'),
-                    validation_result
-                ))
+                # Process emails from this account
+                for email_data in new_emails:
+                    sender_email = email_data['sender_email']
+                    
+                    # Validate sender
+                    validation_result = email_service.validate_sender(sender_email, whitelist, blacklist)
+                    
+                    if validation_result == 'blacklisted':
+                        # Skip blacklisted emails
+                        with get_db() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT INTO email_processing_log 
+                                (email_id, sender_email, subject, received_at, processing_status, validation_result, account_id)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            ''', (
+                                email_data['id'],
+                                sender_email,
+                                email_data['subject'],
+                                email_data['date'],
+                                'rejected',
+                                validation_result,
+                                account['id']
+                            ))
+                        continue
+                    
+                    # Normalize content
+                    normalized_content = email_service.normalize_content(
+                        email_data.get('body_html', ''),
+                        email_data.get('body_text', '')
+                    )
+                    
+                    # AI Processing
+                    classification = classify_email(email_data['subject'], normalized_content)
+                    priority_sentiment = analyze_priority_sentiment(
+                        email_data['subject'],
+                        normalized_content,
+                        sender_email
+                    )
+                    entities = extract_entities(email_data['subject'], normalized_content)
+                    
+                    # Generate draft response
+                    draft = generate_draft_response(
+                        email_data['subject'],
+                        normalized_content,
+                        sender_email,
+                        classification.get('category', 'General Inquiry')
+                    )
+                    
+                    # Save draft to database
+                    with get_db() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute('''
+                            INSERT INTO email_drafts 
+                            (original_email_id, sender_email, recipient_email, subject, body, 
+                             classification, priority, sentiment, extracted_data, original_content, status, account_id)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        ''', (
+                            email_data['id'],
+                            account['email_address'],
+                            sender_email,
+                            draft.get('subject'),
+                            draft.get('body'),
+                            classification.get('category'),
+                            priority_sentiment.get('priority'),
+                            priority_sentiment.get('sentiment'),
+                            json.dumps(entities),
+                            normalized_content,
+                            'pending',
+                            account['id']
+                        ))
+                        draft_id = cursor.fetchone()['id']
+                        
+                        # Log processing
+                        cursor.execute('''
+                            INSERT INTO email_processing_log 
+                            (email_id, sender_email, subject, received_at, processing_status, 
+                             classification, priority, sentiment, validation_result, account_id)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ''', (
+                            email_data['id'],
+                            sender_email,
+                            email_data['subject'],
+                            email_data['date'],
+                            'processed',
+                            classification.get('category'),
+                            priority_sentiment.get('priority'),
+                            priority_sentiment.get('sentiment'),
+                            validation_result,
+                            account['id']
+                        ))
+                    
+                    # Mark email as read so it won't be reprocessed
+                    email_service.mark_as_read(email_data['id'])
+                    
+                    all_processed.append({
+                        'account_name': account['account_name'],
+                        'email_id': email_data['id'],
+                        'draft_id': draft_id,
+                        'classification': classification.get('category'),
+                        'priority': priority_sentiment.get('priority')
+                    })
             
-            # Mark email as read so it won't be reprocessed
-            email_service.mark_as_read(email_data['id'])
-            
-            processed.append({
-                'email_id': email_data['id'],
-                'draft_id': draft_id,
-                'classification': classification.get('category'),
-                'priority': priority_sentiment.get('priority')
-            })
+            except Exception as e:
+                print(f"Error processing account {account['account_name']}: {e}")
+                continue
         
         return jsonify({
             'success': True,
-            'processed_count': len(processed),
-            'processed': processed
+            'processed_count': len(all_processed),
+            'processed': all_processed
         })
     
     except Exception as e:
@@ -297,9 +308,11 @@ def get_drafts():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT * FROM email_drafts 
-            WHERE status = %s 
-            ORDER BY created_at DESC
+            SELECT d.*, a.account_name, a.email_address as account_email
+            FROM email_drafts d
+            LEFT JOIN email_accounts a ON d.account_id = a.id
+            WHERE d.status = %s 
+            ORDER BY d.created_at DESC
         ''', (status,))
         drafts = cursor.fetchall()
         return jsonify(list(drafts))
@@ -418,6 +431,118 @@ def get_stats():
             'total_processed': total_processed,
             'by_category': list(by_category)
         })
+
+
+@app.route('/api/email-accounts', methods=['GET', 'POST'])
+def manage_email_accounts():
+    """Get or create email accounts"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, account_name, email_address, imap_server, imap_port, is_active, 
+                       created_at, updated_at
+                FROM email_accounts 
+                ORDER BY created_at DESC
+            ''')
+            accounts = cursor.fetchall()
+            return jsonify(list(accounts))
+    
+    elif request.method == 'POST':
+        data = request.json
+        
+        encrypted_password = encrypt_password(data['password'])
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO email_accounts 
+                    (account_name, email_address, imap_server, imap_port, encrypted_password, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            ''', (
+                data['account_name'],
+                data['email_address'],
+                data['imap_server'],
+                data.get('imap_port', 993),
+                encrypted_password,
+                data.get('is_active', True)
+            ))
+            account_id = cursor.fetchone()['id']
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Email account added', 'id': account_id})
+
+
+@app.route('/api/email-accounts/<int:account_id>', methods=['PUT', 'DELETE'])
+def manage_email_account(account_id):
+    """Update or delete an email account"""
+    if request.method == 'PUT':
+        data = request.json
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            if 'password' in data and data['password']:
+                encrypted_password = encrypt_password(data['password'])
+                cursor.execute('''
+                    UPDATE email_accounts 
+                    SET account_name = %s, email_address = %s, imap_server = %s, 
+                        imap_port = %s, encrypted_password = %s, is_active = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (
+                    data['account_name'],
+                    data['email_address'],
+                    data['imap_server'],
+                    data.get('imap_port', 993),
+                    encrypted_password,
+                    data.get('is_active', True),
+                    account_id
+                ))
+            else:
+                cursor.execute('''
+                    UPDATE email_accounts 
+                    SET account_name = %s, email_address = %s, imap_server = %s, 
+                        imap_port = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                ''', (
+                    data['account_name'],
+                    data['email_address'],
+                    data['imap_server'],
+                    data.get('imap_port', 993),
+                    data.get('is_active', True),
+                    account_id
+                ))
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Email account updated'})
+    
+    elif request.method == 'DELETE':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM email_accounts WHERE id = %s', (account_id,))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Email account deleted'})
+
+
+@app.route('/api/email-accounts/<int:account_id>/toggle', methods=['POST'])
+def toggle_email_account(account_id):
+    """Toggle email account active status"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE email_accounts 
+            SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            RETURNING is_active
+        ''', (account_id,))
+        result = cursor.fetchone()
+        conn.commit()
+    
+    return jsonify({'success': True, 'is_active': result['is_active']})
 
 
 if __name__ == '__main__':
