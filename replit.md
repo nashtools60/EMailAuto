@@ -37,6 +37,7 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-29: Implemented priority-based triaging matrix with three-tier classification
 - 2025-10-29: Added subject line and body keyword classification by priority
 - 2025-10-29: Added 8 color themes including Dark Mode with proper label visibility
+- 2025-10-29: Redesigned Configuration with separate tabs for High Priority, Important, Low Priority, and Blacklist
 
 ## User Preferences
 - None specified yet

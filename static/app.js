@@ -38,6 +38,20 @@ function showTab(tabName) {
     if (tabName === 'settings') loadSettings();
 }
 
+function showPriorityTab(priority) {
+    // Remove active class from all sub-tabs and priority content
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.priority-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Add active class to selected priority
+    event.target.classList.add('active');
+    document.getElementById(`priority-${priority}`).classList.add('active');
+}
+
 async function loadStats() {
     try {
         const response = await fetch(`${API_BASE}/stats`);
