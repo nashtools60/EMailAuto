@@ -18,6 +18,7 @@
             <button class="tab-btn" onclick="showTab('drafts')">Review Drafts</button>
             <button class="tab-btn" onclick="showTab('accounts')">Email Accounts</button>
             <button class="tab-btn" onclick="showTab('config')">Configuration</button>
+            <button class="tab-btn" onclick="showTab('actions')">Actions</button>
             <button class="tab-btn" onclick="showTab('templates')">Templates</button>
             <button class="tab-btn" onclick="showTab('settings')">Settings</button>
         </nav>
@@ -232,6 +233,76 @@
                         <button onclick="addSubscription()" class="btn">Add Subscription</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Actions Tab -->
+        <div id="actions" class="tab-content">
+            <h2>Action Management</h2>
+            <p class="help-text">Define automated actions and human-in-the-loop workflows with SLA tracking</p>
+            
+            <!-- Priority Sub-Tabs -->
+            <div class="sub-tabs">
+                <button class="sub-tab-btn active" onclick="showActionPriorityTab('high')">High Priority</button>
+                <button class="sub-tab-btn" onclick="showActionPriorityTab('important')">Important</button>
+                <button class="sub-tab-btn" onclick="showActionPriorityTab('low')">Low Priority</button>
+            </div>
+
+            <!-- High Priority Actions -->
+            <div id="action-priority-high" class="priority-content active">
+                <button onclick="showActionForm('High Priority')" class="btn btn-primary">Create Action</button>
+                <div id="actions-high-list" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Important Actions -->
+            <div id="action-priority-important" class="priority-content">
+                <button onclick="showActionForm('Important')" class="btn btn-primary">Create Action</button>
+                <div id="actions-important-list" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Low Priority Actions -->
+            <div id="action-priority-low" class="priority-content">
+                <button onclick="showActionForm('Low Priority')" class="btn btn-primary">Create Action</button>
+                <div id="actions-low-list" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- Action Form (shared across all priorities) -->
+            <div id="action-form" class="card" style="display: none; margin-top: 20px;">
+                <h3 id="action-form-title">Create Action</h3>
+                <div class="form-group">
+                    <label>Action Name:</label>
+                    <input type="text" id="action-name" placeholder="e.g., Auto-label urgent emails">
+                </div>
+                <div class="form-group">
+                    <label>Priority:</label>
+                    <select id="action-priority">
+                        <option value="High Priority">High Priority</option>
+                        <option value="Important">Important</option>
+                        <option value="Low Priority">Low Priority</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Action Type:</label>
+                    <select id="action-type">
+                        <option value="auto">Auto (Automatic Execution)</option>
+                        <option value="hitl">HITL (Human-in-the-Loop)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea id="action-description" rows="3" placeholder="Describe what this action does..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>SLA Hours (for reporting):</label>
+                    <input type="number" id="action-sla-hours" value="24" min="1" placeholder="24">
+                    <small style="display: block; margin-top: 5px; color: #666;">Time-based tracking: 0-24hrs (Green), 24-48hrs (Amber), >48hrs (Red)</small>
+                </div>
+                <div class="form-group">
+                    <label>Link to Templates:</label>
+                    <div id="action-template-links"></div>
+                </div>
+                <button onclick="saveAction()" class="btn btn-primary">Save Action</button>
+                <button onclick="hideActionForm()" class="btn">Cancel</button>
             </div>
         </div>
 

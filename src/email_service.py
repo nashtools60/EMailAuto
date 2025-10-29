@@ -69,24 +69,38 @@ class EmailService:
         match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', from_field)
         return match.group(0) if match else from_field
     
-    def validate_sender(self, sender_email: str, whitelist: List[str], blacklist: List[str]) -> str:
+    def validate_sender(self, sender_email: str, whitelist: List[str], subscriptions_whitelist: List[str]) -> str:
         """
-        Validate sender against whitelist and blacklist
-        Returns: 'whitelisted', 'blacklisted', or 'unknown'
+        Validate sender against whitelist and subscriptions whitelist
+        Returns: 'whitelisted', 'subscription_not_whitelisted', or 'unknown'
         """
         sender_lower = sender_email.lower()
         sender_domain = sender_email.split('@')[-1].lower() if '@' in sender_email else ''
         
-        # Check blacklist first
-        for blocked in blacklist:
-            if blocked.lower() in sender_lower or blocked.lower() == sender_domain:
-                return 'blacklisted'
-        
-        # Check whitelist
+        # Check whitelist (high priority senders)
         for allowed in whitelist:
             if allowed.lower() in sender_lower or allowed.lower() == sender_domain:
                 return 'whitelisted'
         
+        # Detect subscription/newsletter emails using common patterns
+        subscription_indicators = [
+            'newsletter', 'noreply', 'no-reply', 'notifications', 
+            'updates', 'mailer', 'news', 'marketing', 'promo',
+            'automated', 'digest', 'subscriptions', 'campaigns'
+        ]
+        
+        is_subscription = any(indicator in sender_lower for indicator in subscription_indicators)
+        
+        if is_subscription:
+            # Check if this subscription is whitelisted (allowed to keep)
+            for allowed_sub in subscriptions_whitelist:
+                if allowed_sub.lower() in sender_lower or allowed_sub.lower() == sender_domain:
+                    return 'unknown'  # Process normally (it's a wanted subscription)
+            
+            # Subscription not in whitelist - should be unsubscribed/deleted
+            return 'subscription_not_whitelisted'
+        
+        # Not a subscription, process normally
         return 'unknown'
     
     def normalize_content(self, body_html: str, body_text: str) -> str:

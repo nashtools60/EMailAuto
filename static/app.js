@@ -34,6 +34,7 @@ function showTab(tabName) {
     if (tabName === 'drafts') loadDrafts();
     if (tabName === 'accounts') loadAccounts();
     if (tabName === 'config') loadConfig();
+    if (tabName === 'actions') loadActions();
     if (tabName === 'templates') loadTemplates();
     if (tabName === 'settings') loadSettings();
 }
@@ -126,6 +127,7 @@ async function loadDrafts() {
                             <span class="badge badge-${draft.priority.toLowerCase()}">${draft.priority}</span>
                             <span class="badge badge-${draft.sentiment.toLowerCase()}">${draft.sentiment}</span>
                             <span class="badge">${draft.classification}</span>
+                            ${formatSLABadge(draft.created_at, 24)}
                         </div>
                     </div>
                     <div class="draft-meta">
@@ -678,6 +680,254 @@ async function deleteAccount(accountId, accountName) {
         loadAccounts();
     } catch (error) {
         alert('Error deleting account');
+    }
+}
+
+// SLA Color Coding Helper
+function getSLAStatusColor(createdAt, slaHours = 24) {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const hoursDiff = (now - created) / (1000 * 60 * 60);
+    
+    if (hoursDiff <= slaHours) {
+        return { color: '#10b981', label: 'On Time', class: 'sla-green' }; // Green
+    } else if (hoursDiff <= slaHours * 2) {
+        return { color: '#f59e0b', label: 'Warning', class: 'sla-amber' }; // Amber
+    } else {
+        return { color: '#ef4444', label: 'Overdue', class: 'sla-red' }; // Red
+    }
+}
+
+function formatSLABadge(createdAt, slaHours = 24) {
+    const status = getSLAStatusColor(createdAt, slaHours);
+    const now = new Date();
+    const created = new Date(createdAt);
+    const hoursDiff = Math.round((now - created) / (1000 * 60 * 60));
+    
+    return `<span class="badge ${status.class}" style="background: ${status.color}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px;">
+        ${status.label} (${hoursDiff}h)
+    </span>`;
+}
+
+// Actions Management
+let currentActionId = null;
+
+function showActionPriorityTab(priority) {
+    document.querySelectorAll('#actions .sub-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('#actions .priority-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    event.target.classList.add('active');
+    document.getElementById(`action-priority-${priority}`).classList.add('active');
+}
+
+async function loadActions() {
+    try {
+        const response = await fetch(`${API_BASE}/actions`);
+        const actions = await response.json();
+        
+        const highList = document.getElementById('actions-high-list');
+        const importantList = document.getElementById('actions-important-list');
+        const lowList = document.getElementById('actions-low-list');
+        
+        highList.innerHTML = '';
+        importantList.innerHTML = '';
+        lowList.innerHTML = '';
+        
+        const highActions = actions.filter(a => a.priority === 'High Priority');
+        const importantActions = actions.filter(a => a.priority === 'Important');
+        const lowActions = actions.filter(a => a.priority === 'Low Priority');
+        
+        renderActionList(highActions, highList);
+        renderActionList(importantActions, importantList);
+        renderActionList(lowActions, lowList);
+        
+    } catch (error) {
+        console.error('Error loading actions:', error);
+    }
+}
+
+function renderActionList(actions, container) {
+    if (actions.length === 0) {
+        container.innerHTML = '<p class="help-text">No actions defined yet</p>';
+        return;
+    }
+    
+    actions.forEach(action => {
+        const actionCard = document.createElement('div');
+        actionCard.className = 'card';
+        actionCard.style.marginBottom = '15px';
+        
+        const typeBadge = action.action_type === 'auto' ? 
+            '<span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">AUTO</span>' :
+            '<span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 12px;">HITL</span>';
+        
+        actionCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 10px 0;">${action.action_name} ${typeBadge}</h3>
+                    <p style="margin: 5px 0; color: #666;">${action.description || 'No description'}</p>
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>SLA:</strong> ${action.sla_hours} hours</p>
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>Linked Templates:</strong> ${action.template_count || 0}</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="editAction(${action.id})" class="btn" style="padding: 5px 15px;">Edit</button>
+                    <button onclick="deleteAction(${action.id}, '${action.action_name}')" class="btn" style="padding: 5px 15px; background: #dc3545;">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(actionCard);
+    });
+}
+
+function showActionForm(priority = 'High Priority') {
+    document.getElementById('action-form').style.display = 'block';
+    document.getElementById('action-form-title').textContent = 'Create Action';
+    document.getElementById('action-priority').value = priority;
+    currentActionId = null;
+    
+    document.getElementById('action-name').value = '';
+    document.getElementById('action-type').value = 'auto';
+    document.getElementById('action-description').value = '';
+    document.getElementById('action-sla-hours').value = '24';
+    
+    loadTemplateLinks();
+}
+
+function hideActionForm() {
+    document.getElementById('action-form').style.display = 'none';
+    currentActionId = null;
+}
+
+async function loadTemplateLinks() {
+    try {
+        const response = await fetch(`${API_BASE}/templates`);
+        const templates = await response.json();
+        
+        const container = document.getElementById('action-template-links');
+        container.innerHTML = '';
+        
+        if (templates.length === 0) {
+            container.innerHTML = '<p class="help-text">No templates available</p>';
+            return;
+        }
+        
+        let currentActionTemplates = [];
+        if (currentActionId) {
+            const linkResponse = await fetch(`${API_BASE}/actions/${currentActionId}/templates`);
+            currentActionTemplates = await linkResponse.json();
+        }
+        
+        templates.forEach(template => {
+            const isLinked = currentActionTemplates.some(t => t.template_id === template.id);
+            const checkbox = document.createElement('div');
+            checkbox.style.marginBottom = '8px';
+            checkbox.innerHTML = `
+                <label>
+                    <input type="checkbox" class="template-link-checkbox" value="${template.id}" ${isLinked ? 'checked' : ''}>
+                    ${template.template_name} 
+                    <span class="priority-badge ${template.priority?.toLowerCase().replace(' ', '-') || 'important'}">${template.priority || 'Important'}</span>
+                </label>
+            `;
+            container.appendChild(checkbox);
+        });
+    } catch (error) {
+        console.error('Error loading template links:', error);
+    }
+}
+
+async function saveAction() {
+    const actionData = {
+        action_name: document.getElementById('action-name').value,
+        priority: document.getElementById('action-priority').value,
+        action_type: document.getElementById('action-type').value,
+        description: document.getElementById('action-description').value,
+        sla_hours: parseInt(document.getElementById('action-sla-hours').value) || 24
+    };
+    
+    if (!actionData.action_name) {
+        alert('Please enter an action name');
+        return;
+    }
+    
+    try {
+        let response;
+        if (currentActionId) {
+            response = await fetch(`${API_BASE}/actions/${currentActionId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(actionData)
+            });
+        } else {
+            response = await fetch(`${API_BASE}/actions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(actionData)
+            });
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const actionId = currentActionId || result.id;
+            
+            const linkedTemplates = Array.from(document.querySelectorAll('.template-link-checkbox:checked'))
+                .map(cb => parseInt(cb.value));
+            
+            await fetch(`${API_BASE}/actions/${actionId}/templates`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template_ids: linkedTemplates })
+            });
+            
+            hideActionForm();
+            loadActions();
+        } else {
+            alert(result.message || 'Error saving action');
+        }
+    } catch (error) {
+        alert('Error saving action');
+    }
+}
+
+async function editAction(actionId) {
+    try {
+        const response = await fetch(`${API_BASE}/actions/${actionId}`);
+        const action = await response.json();
+        
+        currentActionId = actionId;
+        document.getElementById('action-form').style.display = 'block';
+        document.getElementById('action-form-title').textContent = 'Edit Action';
+        
+        document.getElementById('action-name').value = action.action_name;
+        document.getElementById('action-priority').value = action.priority;
+        document.getElementById('action-type').value = action.action_type;
+        document.getElementById('action-description').value = action.description || '';
+        document.getElementById('action-sla-hours').value = action.sla_hours;
+        
+        await loadTemplateLinks();
+    } catch (error) {
+        alert('Error loading action');
+    }
+}
+
+async function deleteAction(actionId, actionName) {
+    if (!confirm(`Are you sure you want to delete the action "${actionName}"?`)) {
+        return;
+    }
+    
+    try {
+        await fetch(`${API_BASE}/actions/${actionId}`, {
+            method: 'DELETE'
+        });
+        
+        loadActions();
+    } catch (error) {
+        alert('Error deleting action');
     }
 }
 

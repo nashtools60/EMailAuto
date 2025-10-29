@@ -176,24 +176,24 @@ def process_emails():
                 # Fetch new emails
                 new_emails = email_service.fetch_new_emails(limit=10)
                 
-                # Get whitelist and blacklist
+                # Get whitelist and subscriptions whitelist
                 with get_db() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'whitelist'")
                     whitelist = [row['config_value'] for row in cursor.fetchall()]
                     
-                    cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'blacklist'")
-                    blacklist = [row['config_value'] for row in cursor.fetchall()]
+                    cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'subscriptions_whitelist'")
+                    subscriptions_whitelist = [row['config_value'] for row in cursor.fetchall()]
                 
                 # Process emails from this account
                 for email_data in new_emails:
                     sender_email = email_data['sender_email']
                     
                     # Validate sender
-                    validation_result = email_service.validate_sender(sender_email, whitelist, blacklist)
+                    validation_result = email_service.validate_sender(sender_email, whitelist, subscriptions_whitelist)
                     
-                    if validation_result == 'blacklisted':
-                        # Skip blacklisted emails
+                    if validation_result == 'subscription_not_whitelisted':
+                        # Skip subscription emails not in whitelist (auto-unsubscribe/delete)
                         with get_db() as conn:
                             cursor = conn.cursor()
                             cursor.execute('''
@@ -477,7 +477,7 @@ def manage_email_accounts():
                     'message': f'Email domain does not match the selected platform. Expected: @{" or @".join(allowed_domains)}'
                 }), 400
         
-        # Check if email exists in whitelist or blacklist
+        # Check if email exists in whitelist or subscriptions whitelist
         with get_db() as conn:
             cursor = conn.cursor()
             
@@ -488,18 +488,18 @@ def manage_email_accounts():
             ''', (email_address,))
             in_whitelist = cursor.fetchone()['count'] > 0
             
-            # Check blacklist
+            # Check subscriptions whitelist
             cursor.execute('''
                 SELECT COUNT(*) as count FROM configurations 
-                WHERE config_type = 'blacklist' AND config_key = %s
+                WHERE config_type = 'subscriptions_whitelist' AND config_key = %s
             ''', (email_address,))
-            in_blacklist = cursor.fetchone()['count'] > 0
+            in_subscriptions = cursor.fetchone()['count'] > 0
             
             if in_whitelist:
                 return jsonify({'success': False, 'message': 'This email address already exists in the Whitelist'}), 400
             
-            if in_blacklist:
-                return jsonify({'success': False, 'message': 'This email address already exists in the Blacklist'}), 400
+            if in_subscriptions:
+                return jsonify({'success': False, 'message': 'This email address already exists in the Subscriptions Whitelist'}), 400
         
         encrypted_password = encrypt_password(data['password'])
         
@@ -593,6 +593,135 @@ def toggle_email_account(account_id):
         conn.commit()
     
     return jsonify({'success': True, 'is_active': result['is_active']})
+
+
+# Actions Management API
+@app.route('/api/actions', methods=['GET', 'POST'])
+def manage_actions():
+    """Get all actions or create a new action"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT a.*, COUNT(at.template_id) as template_count
+                FROM actions a
+                LEFT JOIN action_templates at ON a.id = at.action_id
+                GROUP BY a.id
+                ORDER BY 
+                    CASE a.priority
+                        WHEN 'High Priority' THEN 1
+                        WHEN 'Important' THEN 2
+                        WHEN 'Low Priority' THEN 3
+                    END,
+                    a.created_at DESC
+            ''')
+            actions = cursor.fetchall()
+        
+        return jsonify(actions)
+    
+    elif request.method == 'POST':
+        data = request.json
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO actions (action_name, priority, action_type, description, sla_hours)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            ''', (
+                data['action_name'],
+                data['priority'],
+                data['action_type'],
+                data.get('description', ''),
+                data.get('sla_hours', 24)
+            ))
+            action_id = cursor.fetchone()['id']
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Action created', 'id': action_id})
+
+
+@app.route('/api/actions/<int:action_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_action(action_id):
+    """Get, update, or delete a specific action"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM actions WHERE id = %s', (action_id,))
+            action = cursor.fetchone()
+        
+        if not action:
+            return jsonify({'error': 'Action not found'}), 404
+        
+        return jsonify(action)
+    
+    elif request.method == 'PUT':
+        data = request.json
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE actions
+                SET action_name = %s, priority = %s, action_type = %s, 
+                    description = %s, sla_hours = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            ''', (
+                data['action_name'],
+                data['priority'],
+                data['action_type'],
+                data.get('description', ''),
+                data.get('sla_hours', 24),
+                action_id
+            ))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Action updated'})
+    
+    elif request.method == 'DELETE':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM action_templates WHERE action_id = %s', (action_id,))
+            cursor.execute('DELETE FROM actions WHERE id = %s', (action_id,))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Action deleted'})
+
+
+@app.route('/api/actions/<int:action_id>/templates', methods=['GET', 'POST'])
+def manage_action_templates(action_id):
+    """Get or update template links for an action"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT at.*, t.template_name, t.priority
+                FROM action_templates at
+                JOIN email_templates t ON at.template_id = t.id
+                WHERE at.action_id = %s
+                ORDER BY at.execution_order
+            ''', (action_id,))
+            templates = cursor.fetchall()
+        
+        return jsonify(templates)
+    
+    elif request.method == 'POST':
+        data = request.json
+        template_ids = data.get('template_ids', [])
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM action_templates WHERE action_id = %s', (action_id,))
+            
+            for order, template_id in enumerate(template_ids, start=1):
+                cursor.execute('''
+                    INSERT INTO action_templates (action_id, template_id, execution_order)
+                    VALUES (%s, %s, %s)
+                ''', (action_id, template_id, order))
+            
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Template links updated'})
 
 
 if __name__ == '__main__':
