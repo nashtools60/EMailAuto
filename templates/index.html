@@ -119,7 +119,7 @@
                 <button class="sub-tab-btn active" onclick="showPriorityTab('high')">High Priority</button>
                 <button class="sub-tab-btn" onclick="showPriorityTab('important')">Important</button>
                 <button class="sub-tab-btn" onclick="showPriorityTab('low')">Low Priority</button>
-                <button class="sub-tab-btn" onclick="showPriorityTab('blacklist')">Blacklist</button>
+                <button class="sub-tab-btn" onclick="showPriorityTab('subscriptions')">Subscriptions</button>
             </div>
 
             <!-- High Priority Tab -->
@@ -221,19 +221,15 @@
                 </div>
             </div>
 
-            <!-- Blacklist Tab -->
-            <div id="priority-blacklist" class="priority-content">
+            <!-- Subscriptions Whitelist Tab -->
+            <div id="priority-subscriptions" class="priority-content">
                 <div class="card">
-                    <h3>⛔ Blocked Senders (Blacklist)</h3>
-                    <p class="help-text">Add email addresses or domains to automatically reject</p>
-                    <div id="blacklist-items"></div>
+                    <h3>📧 Subscriptions Whitelist</h3>
+                    <p class="help-text">Subscriptions to keep - newsletters and services you want to continue receiving</p>
+                    <div id="subscriptions-items"></div>
                     <div class="input-group">
-                        <input type="text" id="blacklist-input" placeholder="spam@example.com">
-                        <select id="blacklist-category" style="padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                            <option value="Unsubscribe">Unsubscribe</option>
-                            <option value="Permanent Delete">Permanent Delete</option>
-                        </select>
-                        <button onclick="addBlacklist()" class="btn">Add Block</button>
+                        <input type="text" id="subscriptions-input" placeholder="newsletter@service.com or @updates.company.com">
+                        <button onclick="addSubscription()" class="btn">Add Subscription</button>
                     </div>
                 </div>
             </div>
@@ -249,6 +245,14 @@
                 <div class="form-group">
                     <label>Template Name:</label>
                     <input type="text" id="template-name" placeholder="e.g., Sales Inquiry Response">
+                </div>
+                <div class="form-group">
+                    <label>Priority:</label>
+                    <select id="template-priority">
+                        <option value="High Priority">High Priority</option>
+                        <option value="Important" selected>Important</option>
+                        <option value="Low Priority">Low Priority</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Category:</label>

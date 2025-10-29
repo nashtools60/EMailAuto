@@ -225,8 +225,8 @@ async function loadConfig() {
     loadPriorityConfigList('body_keyword', 'Important', 'body-important-items');
     loadPriorityConfigList('body_keyword', 'Low Priority', 'body-low-items');
     
-    // Load blacklist
-    loadConfigList('blacklist', 'blacklist-items');
+    // Load subscriptions whitelist
+    loadConfigList('subscriptions_whitelist', 'subscriptions-items');
 }
 
 async function loadPriorityConfigList(type, priority, containerId) {
@@ -307,11 +307,9 @@ async function addConfig(type) {
     }
 }
 
-async function addBlacklist() {
-    const input = document.getElementById('blacklist-input');
-    const categorySelect = document.getElementById('blacklist-category');
+async function addSubscription() {
+    const input = document.getElementById('subscriptions-input');
     const value = input.value.trim();
-    const category = categorySelect.value;
     
     if (!value) return;
     
@@ -320,17 +318,16 @@ async function addBlacklist() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                config_type: 'blacklist',
+                config_type: 'subscriptions_whitelist',
                 config_key: value,
-                config_value: value,
-                category: category
+                config_value: value
             })
         });
         
         input.value = '';
-        loadConfigList('blacklist', 'blacklist-items');
+        loadConfigList('subscriptions_whitelist', 'subscriptions-items');
     } catch (error) {
-        alert('Error adding blacklist entry');
+        alert('Error adding subscription');
     }
 }
 
@@ -403,11 +400,18 @@ async function loadTemplates() {
             return;
         }
         
-        container.innerHTML = templates.map(template => `
+        container.innerHTML = templates.map(template => {
+            // Color code priority badge
+            let priorityColor = '#10b981'; // green for low
+            if (template.priority === 'High Priority') priorityColor = '#ef4444';
+            else if (template.priority === 'Important') priorityColor = '#f59e0b';
+            
+            return `
             <div class="template-card">
                 <div class="template-header">
                     <div>
                         <strong>${template.name}</strong>
+                        <span class="badge" style="background: ${priorityColor};">${template.priority || 'Important'}</span>
                         <span class="badge">${template.category || 'General'}</span>
                     </div>
                     <button class="delete-btn" onclick="deleteTemplate(${template.id})">Delete</button>
@@ -416,7 +420,8 @@ async function loadTemplates() {
                 <div style="margin-top: 10px;"><strong>Body:</strong></div>
                 <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 5px; white-space: pre-wrap;">${template.body_template}</pre>
             </div>
-        `).join('');
+        `;
+        }).join('');
     } catch (error) {
         container.innerHTML = '<p style="color: red;">Error loading templates</p>';
     }
@@ -429,12 +434,14 @@ function showTemplateForm() {
 function hideTemplateForm() {
     document.getElementById('template-form').style.display = 'none';
     document.getElementById('template-name').value = '';
+    document.getElementById('template-priority').value = 'Important';
     document.getElementById('template-subject').value = '';
     document.getElementById('template-body').value = '';
 }
 
 async function saveTemplate() {
     const name = document.getElementById('template-name').value.trim();
+    const priority = document.getElementById('template-priority').value;
     const category = document.getElementById('template-category').value;
     const subject = document.getElementById('template-subject').value.trim();
     const body = document.getElementById('template-body').value.trim();
@@ -448,7 +455,7 @@ async function saveTemplate() {
         await fetch(`${API_BASE}/templates`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, category, subject_template: subject, body_template: body })
+            body: JSON.stringify({ name, priority, category, subject_template: subject, body_template: body })
         });
         
         hideTemplateForm();

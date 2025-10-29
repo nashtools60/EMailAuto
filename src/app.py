@@ -101,22 +101,25 @@ def manage_templates():
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO email_templates (name, subject_template, body_template, category)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO email_templates (name, subject_template, body_template, category, priority)
+                VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (name)
                 DO UPDATE SET 
                     subject_template = %s,
                     body_template = %s,
                     category = %s,
+                    priority = %s,
                     updated_at = CURRENT_TIMESTAMP
             ''', (
                 data['name'],
                 data.get('subject_template'),
                 data['body_template'],
                 data.get('category'),
+                data.get('priority', 'Important'),
                 data.get('subject_template'),
                 data['body_template'],
-                data.get('category')
+                data.get('category'),
+                data.get('priority', 'Important')
             ))
             conn.commit()
         

@@ -113,9 +113,23 @@ def init_db():
                 subject_template TEXT,
                 body_template TEXT NOT NULL,
                 category VARCHAR(100),
+                priority VARCHAR(50) DEFAULT 'Important',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        ''')
+        
+        # Add priority column to existing templates if it doesn't exist
+        cursor.execute('''
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='email_templates' AND column_name='priority'
+                ) THEN
+                    ALTER TABLE email_templates ADD COLUMN priority VARCHAR(50) DEFAULT 'Important';
+                END IF;
+            END $$;
         ''')
         
         # Email drafts table - stores generated drafts awaiting human review
@@ -167,6 +181,56 @@ def init_db():
                 setting_value TEXT NOT NULL,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        ''')
+        
+        # Actions table - stores auto and human-in-the-loop actions
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS actions (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                action_type VARCHAR(50) NOT NULL,
+                trigger_priority VARCHAR(50) NOT NULL,
+                is_auto BOOLEAN DEFAULT FALSE,
+                config JSONB,
+                sla_hours INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Action-Template join table for many-to-many relationship
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS action_templates (
+                id SERIAL PRIMARY KEY,
+                action_id INTEGER REFERENCES actions(id) ON DELETE CASCADE,
+                template_id INTEGER REFERENCES email_templates(id) ON DELETE CASCADE,
+                ordering INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(action_id, template_id)
+            )
+        ''')
+        
+        # Action execution log
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS action_execution_log (
+                id SERIAL PRIMARY KEY,
+                action_id INTEGER REFERENCES actions(id),
+                draft_id INTEGER REFERENCES email_drafts(id),
+                execution_type VARCHAR(50),
+                execution_status VARCHAR(50),
+                sla_due TIMESTAMP,
+                completed_at TIMESTAMP,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Migrate blacklist entries to subscriptions_whitelist
+        cursor.execute('''
+            UPDATE configurations 
+            SET config_type = 'subscriptions_whitelist' 
+            WHERE config_type = 'blacklist'
         ''')
         
         conn.commit()
