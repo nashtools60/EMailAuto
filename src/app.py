@@ -73,16 +73,37 @@ def manage_config():
         return jsonify({'success': True, 'message': 'Configuration updated'})
 
 
-@app.route('/api/config/<config_type>/<config_key>', methods=['DELETE'])
-def delete_config(config_type, config_key):
-    """Delete a configuration entry"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM configurations WHERE config_type = %s AND config_key = %s',
-                      (config_type, config_key))
-        conn.commit()
+@app.route('/api/config/<config_type>/<config_key>', methods=['PUT', 'DELETE'])
+def update_or_delete_config(config_type, config_key):
+    """Update or delete a configuration entry"""
+    if request.method == 'PUT':
+        data = request.json
+        new_key = data.get('config_key')
+        new_value = data.get('config_value')
+        category = data.get('category')
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # Delete old entry
+            cursor.execute('DELETE FROM configurations WHERE config_type = %s AND config_key = %s',
+                          (config_type, config_key))
+            # Insert new entry
+            cursor.execute('''
+                INSERT INTO configurations (config_type, config_key, config_value, category)
+                VALUES (%s, %s, %s, %s)
+            ''', (config_type, new_key, new_value, category))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Configuration updated'})
     
-    return jsonify({'success': True, 'message': 'Configuration deleted'})
+    elif request.method == 'DELETE':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM configurations WHERE config_type = %s AND config_key = %s',
+                          (config_type, config_key))
+            conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Configuration deleted'})
 
 
 @app.route('/api/templates', methods=['GET', 'POST'])

@@ -250,7 +250,10 @@ async function loadPriorityConfigList(type, priority, containerId) {
         container.innerHTML = items.map(item => `
             <div class="config-item">
                 <span>${item.value}</span>
-                <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+                <div class="button-group">
+                    <button class="edit-btn" onclick="editConfig('${type}', '${item.key}', '${priority}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+                </div>
             </div>
         `).join('');
     } catch (error) {
@@ -276,7 +279,10 @@ async function loadConfigList(type, containerId) {
             return `
                 <div class="config-item">
                     <span>${item.value}${categoryBadge}</span>
-                    <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+                    <div class="button-group">
+                        <button class="edit-btn" onclick="editConfig('${type}', '${item.key}', null)">Edit</button>
+                        <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -390,6 +396,28 @@ async function addPriorityConfig(type, priority) {
         loadPriorityConfigList(type, priority, containerId);
     } catch (error) {
         alert('Error adding entry');
+    }
+}
+
+async function editConfig(type, key, priority) {
+    const newValue = prompt('Enter new value:', key);
+    if (!newValue || newValue.trim() === '') return;
+    
+    try {
+        await fetch(`${API_BASE}/config/${type}/${encodeURIComponent(key)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                config_key: newValue.trim(),
+                config_value: newValue.trim(),
+                category: priority
+            })
+        });
+        
+        // Reload all config lists
+        loadConfig();
+    } catch (error) {
+        alert('Error updating entry');
     }
 }
 

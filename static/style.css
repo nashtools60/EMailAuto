@@ -319,6 +319,26 @@ header h1 {
     border: 1px solid var(--border-color);
 }
 
+.button-group {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.edit-btn:hover {
+    background: #2563eb;
+}
+
 .delete-btn {
     background: #ef4444;
     color: white;
@@ -327,6 +347,11 @@ header h1 {
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
 }
 
 .form-group {
