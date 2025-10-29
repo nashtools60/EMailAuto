@@ -827,7 +827,8 @@ function renderActionList(actions, container) {
 }
 
 function showActionForm(priority = 'High Priority') {
-    document.getElementById('action-form').style.display = 'block';
+    const form = document.getElementById('action-form');
+    form.style.display = 'block';
     document.getElementById('action-form-title').textContent = 'Create Action';
     document.getElementById('action-priority').value = priority;
     currentActionId = null;
@@ -838,6 +839,11 @@ function showActionForm(priority = 'High Priority') {
     document.getElementById('action-sla-hours').value = '24';
     
     loadTemplateLinks();
+    
+    // Scroll form into view
+    setTimeout(() => {
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
 }
 
 function hideActionForm() {
@@ -926,8 +932,18 @@ async function saveAction() {
                 body: JSON.stringify({ template_ids: linkedTemplates })
             });
             
-            hideActionForm();
-            loadActions();
+            // Show success message
+            const formTitle = document.getElementById('action-form-title');
+            const originalTitle = formTitle.textContent;
+            formTitle.textContent = '✓ Saved Successfully!';
+            formTitle.style.color = '#10b981';
+            
+            setTimeout(() => {
+                hideActionForm();
+                formTitle.textContent = originalTitle;
+                formTitle.style.color = '';
+                loadActions();
+            }, 1000);
         } else {
             alert(result.message || 'Error saving action');
         }
@@ -942,7 +958,8 @@ async function editAction(actionId) {
         const action = await response.json();
         
         currentActionId = actionId;
-        document.getElementById('action-form').style.display = 'block';
+        const form = document.getElementById('action-form');
+        form.style.display = 'block';
         document.getElementById('action-form-title').textContent = 'Edit Action';
         
         document.getElementById('action-name').value = action.action_name;
@@ -952,6 +969,11 @@ async function editAction(actionId) {
         document.getElementById('action-sla-hours').value = action.sla_hours;
         
         await loadTemplateLinks();
+        
+        // Scroll form into view
+        setTimeout(() => {
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
     } catch (error) {
         alert('Error loading action');
     }
