@@ -377,14 +377,14 @@ async function addPriorityConfig(type, priority) {
         
         input.value = '';
         
-        // Determine container ID and reload
+        // Determine container ID and reload (use same priorityShort mapping)
         let containerId;
         if (type === 'whitelist') {
-            containerId = `whitelist-${priority.toLowerCase().replace(' ', '-')}-items`;
+            containerId = `whitelist-${priorityShort}-items`;
         } else if (type === 'subject_keyword') {
-            containerId = `subject-${priority.toLowerCase().replace(' ', '-')}-items`;
+            containerId = `subject-${priorityShort}-items`;
         } else if (type === 'body_keyword') {
-            containerId = `body-${priority.toLowerCase().replace(' ', '-')}-items`;
+            containerId = `body-${priorityShort}-items`;
         }
         
         loadPriorityConfigList(type, priority, containerId);
