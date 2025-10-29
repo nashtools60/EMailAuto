@@ -334,17 +334,31 @@ async function addSubscription() {
 }
 
 async function addPriorityConfig(type, priority) {
+    // Map priority to shortened form for input IDs
+    const priorityMap = {
+        'High Priority': 'high',
+        'Important': 'important',
+        'Low Priority': 'low'
+    };
+    
+    const priorityShort = priorityMap[priority];
+    
     // Determine the input field ID based on type and priority
     let inputId;
     if (type === 'whitelist') {
-        inputId = `whitelist-${priority.toLowerCase().replace(' ', '-')}-input`;
+        inputId = `whitelist-${priorityShort}-input`;
     } else if (type === 'subject_keyword') {
-        inputId = `subject-${priority.toLowerCase().replace(' ', '-')}-input`;
+        inputId = `subject-${priorityShort}-input`;
     } else if (type === 'body_keyword') {
-        inputId = `body-${priority.toLowerCase().replace(' ', '-')}-input`;
+        inputId = `body-${priorityShort}-input`;
     }
     
     const input = document.getElementById(inputId);
+    if (!input) {
+        console.error(`Input field not found: ${inputId}`);
+        return;
+    }
+    
     const value = input.value.trim();
     
     if (!value) return;
