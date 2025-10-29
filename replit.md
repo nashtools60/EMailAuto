@@ -41,6 +41,11 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-29: Added priority classification to email templates (High Priority, Important, Low Priority)
 - 2025-10-29: Created database tables for actions management system (actions, action_templates, action_execution_log)
 - 2025-10-29: Renamed blacklist to Subscriptions Whitelist for managing newsletter subscriptions to keep
+- 2025-10-29: Implemented complete Actions management tab with priority-based organization
+- 2025-10-29: Added action-template linking with many-to-many relationships and execution ordering
+- 2025-10-29: Implemented SLA time-based color coding (Green: 0-24h, Amber: 24-48h, Red: >48h)
+- 2025-10-29: Created full CRUD API endpoints for actions management and template linking
+- 2025-10-29: Fixed subscription validation logic to properly detect and filter unwanted newsletters
 
 ## User Preferences
 - None specified yet
