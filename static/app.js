@@ -564,6 +564,8 @@ async function saveSettings() {
 }
 
 // Email Accounts Management
+let currentAccountId = null;
+
 const IMAP_PRESETS = {
     gmail: { server: 'imap.gmail.com', port: 993, domains: ['gmail.com', 'googlemail.com'] },
     outlook: { server: 'outlook.office365.com', port: 993, domains: ['outlook.com', 'hotmail.com', 'live.com'] },
@@ -607,6 +609,9 @@ async function loadAccounts() {
                         </p>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button onclick="editAccount(${account.id})" class="edit-btn" style="padding: 8px 12px;">
+                            Edit
+                        </button>
                         <button onclick="toggleAccount(${account.id})" class="btn" style="padding: 8px 12px;">
                             ${account.is_active ? 'Deactivate' : 'Activate'}
                         </button>
@@ -623,12 +628,15 @@ async function loadAccounts() {
 }
 
 function showAccountForm() {
+    currentAccountId = null;
     document.getElementById('account-form').style.display = 'block';
+    document.getElementById('account-form-title').textContent = 'Add Email Account';
     clearAccountForm();
 }
 
 function hideAccountForm() {
     document.getElementById('account-form').style.display = 'none';
+    currentAccountId = null;
     clearAccountForm();
 }
 
@@ -643,6 +651,35 @@ function clearAccountForm() {
     applyIMAPPreset(); // Apply Gmail preset by default
 }
 
+async function editAccount(accountId) {
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts/${accountId}`);
+        const account = await response.json();
+        
+        currentAccountId = accountId;
+        document.getElementById('account-form').style.display = 'block';
+        document.getElementById('account-form-title').textContent = 'Edit Email Account';
+        
+        document.getElementById('account-name').value = account.account_name;
+        document.getElementById('account-email').value = account.email_address;
+        document.getElementById('account-imap-server').value = account.imap_server;
+        document.getElementById('account-imap-port').value = account.imap_port;
+        document.getElementById('account-password').value = ''; // Don't show encrypted password
+        document.getElementById('account-active').checked = account.is_active;
+        
+        // Set preset based on server
+        const preset = Object.keys(IMAP_PRESETS).find(key => 
+            IMAP_PRESETS[key].server === account.imap_server
+        );
+        document.getElementById('imap-preset').value = preset || '';
+        
+        // Scroll form into view
+        document.getElementById('account-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+        alert('Error loading account');
+    }
+}
+
 async function saveAccount() {
     const name = document.getElementById('account-name').value.trim();
     const email = document.getElementById('account-email').value.trim();
@@ -652,7 +689,13 @@ async function saveAccount() {
     const isActive = document.getElementById('account-active').checked;
     const preset = document.getElementById('imap-preset').value;
     
-    if (!name || !email || !server || !password) {
+    // When editing, password is optional (only required if changing it)
+    if (!currentAccountId && !password) {
+        alert('Password is required for new accounts');
+        return;
+    }
+    
+    if (!name || !email || !server) {
         alert('Please fill in all required fields');
         return;
     }
@@ -669,24 +712,42 @@ async function saveAccount() {
     }
     
     try {
-        const response = await fetch(`${API_BASE}/email-accounts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                account_name: name,
-                email_address: email,
-                imap_server: server,
-                imap_port: port,
-                password: password,
-                is_active: isActive
-            })
-        });
+        const accountData = {
+            account_name: name,
+            email_address: email,
+            imap_server: server,
+            imap_port: port,
+            is_active: isActive
+        };
+        
+        // Only include password if it's provided
+        if (password) {
+            accountData.password = password;
+        }
+        
+        let response;
+        if (currentAccountId) {
+            // Update existing account
+            response = await fetch(`${API_BASE}/email-accounts/${currentAccountId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(accountData)
+            });
+        } else {
+            // Create new account
+            response = await fetch(`${API_BASE}/email-accounts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(accountData)
+            });
+        }
         
         const result = await response.json();
         
         if (result.success) {
             hideAccountForm();
             loadAccounts();
+            alert(currentAccountId ? 'Account updated successfully!' : 'Account added successfully!');
         } else {
             alert(result.message || 'Error saving account');
         }

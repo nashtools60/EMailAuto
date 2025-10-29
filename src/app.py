@@ -545,10 +545,21 @@ def manage_email_accounts():
         return jsonify({'success': True, 'message': 'Email account added', 'id': account_id})
 
 
-@app.route('/api/email-accounts/<int:account_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/email-accounts/<int:account_id>', methods=['GET', 'PUT', 'DELETE'])
 def manage_email_account(account_id):
-    """Update or delete an email account"""
-    if request.method == 'PUT':
+    """Get, update, or delete an email account"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM email_accounts WHERE id = %s', (account_id,))
+            account = cursor.fetchone()
+            
+            if not account:
+                return jsonify({'success': False, 'message': 'Account not found'}), 404
+            
+            return jsonify(dict(account))
+    
+    elif request.method == 'PUT':
         data = request.json
         
         with get_db() as conn:
