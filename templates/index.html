@@ -112,14 +112,96 @@
         <!-- Configuration Tab -->
         <div id="config" class="tab-content">
             <h2>Email Processing Configuration</h2>
+            <p class="help-text">Configure priority-based email classification using the triage matrix</p>
             
+            <!-- Sender Whitelists by Priority -->
             <div class="card">
-                <h3>VIP Senders (Whitelist)</h3>
-                <p class="help-text">Add email addresses or domains for high-priority senders</p>
-                <div id="whitelist-items"></div>
+                <h3>High Priority Senders</h3>
+                <p class="help-text">CEOs, VPs, key clients - highest priority processing</p>
+                <div id="whitelist-high-items"></div>
                 <div class="input-group">
-                    <input type="text" id="whitelist-input" placeholder="email@example.com or @company.com">
-                    <button onclick="addConfig('whitelist')" class="btn">Add VIP</button>
+                    <input type="text" id="whitelist-high-input" placeholder="ceo@company.com or @keyclient.com">
+                    <button onclick="addPriorityConfig('whitelist', 'High Priority')" class="btn">Add High Priority</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Important Senders</h3>
+                <p class="help-text">Internal colleagues, project team members - important processing</p>
+                <div id="whitelist-important-items"></div>
+                <div class="input-group">
+                    <input type="text" id="whitelist-important-input" placeholder="colleague@company.com">
+                    <button onclick="addPriorityConfig('whitelist', 'Important')" class="btn">Add Important</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Low Priority Senders</h3>
+                <p class="help-text">Subscriptions to maintain, newsletters - low priority processing</p>
+                <div id="whitelist-low-items"></div>
+                <div class="input-group">
+                    <input type="text" id="whitelist-low-input" placeholder="newsletter@service.com">
+                    <button onclick="addPriorityConfig('whitelist', 'Low Priority')" class="btn">Add Low Priority</button>
+                </div>
+            </div>
+
+            <!-- Subject Keywords by Priority -->
+            <div class="card">
+                <h3>Subject Line Keywords</h3>
+                <p class="help-text">Keywords in subject lines that indicate priority level</p>
+                
+                <h4 style="margin-top: 15px;">High Priority Subject Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., Deadline, Meeting invite, Status report, URGENT</p>
+                <div id="subject-high-items"></div>
+                <div class="input-group">
+                    <input type="text" id="subject-high-input" placeholder="Deadline, Meeting, Urgent">
+                    <button onclick="addPriorityConfig('subject_keyword', 'High Priority')" class="btn">Add High Priority</button>
+                </div>
+
+                <h4 style="margin-top: 15px;">Important Subject Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., Minutes, Plan, Expense, Action Required</p>
+                <div id="subject-important-items"></div>
+                <div class="input-group">
+                    <input type="text" id="subject-important-input" placeholder="Minutes, Plan, Expense">
+                    <button onclick="addPriorityConfig('subject_keyword', 'Important')" class="btn">Add Important</button>
+                </div>
+
+                <h4 style="margin-top: 15px;">Low Priority Subject Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., FYI, Newsletter, Update</p>
+                <div id="subject-low-items"></div>
+                <div class="input-group">
+                    <input type="text" id="subject-low-input" placeholder="FYI, Newsletter">
+                    <button onclick="addPriorityConfig('subject_keyword', 'Low Priority')" class="btn">Add Low Priority</button>
+                </div>
+            </div>
+
+            <!-- Body Keywords by Priority -->
+            <div class="card">
+                <h3>Body Content Keywords</h3>
+                <p class="help-text">Keywords in email body that indicate priority level</p>
+                
+                <h4 style="margin-top: 15px;">High Priority Body Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., Critical, Urgent, Immediate action required</p>
+                <div id="body-high-items"></div>
+                <div class="input-group">
+                    <input type="text" id="body-high-input" placeholder="Critical, Urgent, Immediate">
+                    <button onclick="addPriorityConfig('body_keyword', 'High Priority')" class="btn">Add High Priority</button>
+                </div>
+
+                <h4 style="margin-top: 15px;">Important Body Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., Action plan, Please review, Task assignment</p>
+                <div id="body-important-items"></div>
+                <div class="input-group">
+                    <input type="text" id="body-important-input" placeholder="Action plan, Please review">
+                    <button onclick="addPriorityConfig('body_keyword', 'Important')" class="btn">Add Important</button>
+                </div>
+
+                <h4 style="margin-top: 15px;">Low Priority Body Keywords</h4>
+                <p class="help-text" style="font-size: 0.85em;">e.g., Unsubscribe, FYI, Optional</p>
+                <div id="body-low-items"></div>
+                <div class="input-group">
+                    <input type="text" id="body-low-input" placeholder="Unsubscribe, FYI">
+                    <button onclick="addPriorityConfig('body_keyword', 'Low Priority')" class="btn">Add Low Priority</button>
                 </div>
             </div>
 

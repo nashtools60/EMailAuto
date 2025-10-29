@@ -196,8 +196,50 @@ async function rejectDraft(draftId) {
 }
 
 async function loadConfig() {
-    loadConfigList('whitelist', 'whitelist-items');
+    // Load priority-based whitelists
+    loadPriorityConfigList('whitelist', 'High Priority', 'whitelist-high-items');
+    loadPriorityConfigList('whitelist', 'Important', 'whitelist-important-items');
+    loadPriorityConfigList('whitelist', 'Low Priority', 'whitelist-low-items');
+    
+    // Load priority-based subject keywords
+    loadPriorityConfigList('subject_keyword', 'High Priority', 'subject-high-items');
+    loadPriorityConfigList('subject_keyword', 'Important', 'subject-important-items');
+    loadPriorityConfigList('subject_keyword', 'Low Priority', 'subject-low-items');
+    
+    // Load priority-based body keywords
+    loadPriorityConfigList('body_keyword', 'High Priority', 'body-high-items');
+    loadPriorityConfigList('body_keyword', 'Important', 'body-important-items');
+    loadPriorityConfigList('body_keyword', 'Low Priority', 'body-low-items');
+    
+    // Load blacklist
     loadConfigList('blacklist', 'blacklist-items');
+}
+
+async function loadPriorityConfigList(type, priority, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/config?type=${type}`);
+        const configs = await response.json();
+        
+        // Filter by priority category
+        const items = configs[type] ? configs[type].filter(item => item.category === priority) : [];
+        
+        if (items.length === 0) {
+            container.innerHTML = '<p class="help-text">No entries yet</p>';
+            return;
+        }
+        
+        container.innerHTML = items.map(item => `
+            <div class="config-item">
+                <span>${item.value}</span>
+                <button class="delete-btn" onclick="deleteConfig('${type}', '${item.key}')">Remove</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        container.innerHTML = '<p style="color: red;">Error loading</p>';
+    }
 }
 
 async function loadConfigList(type, containerId) {
@@ -278,10 +320,57 @@ async function addBlacklist() {
     }
 }
 
+async function addPriorityConfig(type, priority) {
+    // Determine the input field ID based on type and priority
+    let inputId;
+    if (type === 'whitelist') {
+        inputId = `whitelist-${priority.toLowerCase().replace(' ', '-')}-input`;
+    } else if (type === 'subject_keyword') {
+        inputId = `subject-${priority.toLowerCase().replace(' ', '-')}-input`;
+    } else if (type === 'body_keyword') {
+        inputId = `body-${priority.toLowerCase().replace(' ', '-')}-input`;
+    }
+    
+    const input = document.getElementById(inputId);
+    const value = input.value.trim();
+    
+    if (!value) return;
+    
+    try {
+        await fetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                config_type: type,
+                config_key: value,
+                config_value: value,
+                category: priority
+            })
+        });
+        
+        input.value = '';
+        
+        // Determine container ID and reload
+        let containerId;
+        if (type === 'whitelist') {
+            containerId = `whitelist-${priority.toLowerCase().replace(' ', '-')}-items`;
+        } else if (type === 'subject_keyword') {
+            containerId = `subject-${priority.toLowerCase().replace(' ', '-')}-items`;
+        } else if (type === 'body_keyword') {
+            containerId = `body-${priority.toLowerCase().replace(' ', '-')}-items`;
+        }
+        
+        loadPriorityConfigList(type, priority, containerId);
+    } catch (error) {
+        alert('Error adding entry');
+    }
+}
+
 async function deleteConfig(type, key) {
     try {
         await fetch(`${API_BASE}/config/${type}/${key}`, { method: 'DELETE' });
-        loadConfigList(type, `${type}-items`);
+        // Reload all config lists
+        loadConfig();
     } catch (error) {
         alert('Error deleting entry');
     }
