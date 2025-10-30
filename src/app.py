@@ -28,6 +28,46 @@ def get_priority_level(priority):
     return priority_levels.get(priority, 2)
 
 
+def is_advertisement(classification, sender_email, subscriptions_whitelist):
+    """
+    Determine if an email is a pure advertisement that should be deleted.
+    
+    Criteria for pure adverts:
+    - Classified as Marketing, Spam, Promotional, Newsletter, or similar
+    - NOT in the subscriptions whitelist (emails you want to keep)
+    - Contains typical marketing/promotional language
+    
+    Returns True if the email should be permanently deleted
+    """
+    # Marketing-related classifications that indicate adverts
+    advert_classifications = [
+        'marketing',
+        'spam',
+        'promotional',
+        'advertisement',
+        'newsletter',
+        'sales',
+        'offer'
+    ]
+    
+    # Check if classification matches advert patterns
+    classification_lower = classification.lower()
+    is_marketing = any(advert_type in classification_lower for advert_type in advert_classifications)
+    
+    if not is_marketing:
+        return False
+    
+    # Check if sender is in subscriptions whitelist (keep these)
+    sender_lower = sender_email.lower()
+    for whitelisted in subscriptions_whitelist:
+        whitelisted_lower = whitelisted.lower()
+        if whitelisted_lower in sender_lower or sender_lower.endswith(whitelisted_lower):
+            return False  # Keep whitelisted newsletters
+    
+    # It's marketing and not whitelisted = pure advert to delete
+    return True
+
+
 def apply_triaging_matrix(sender_email, subject, body, ai_priority, sender_priorities, subject_keywords, body_keywords):
     """
     Apply triaging matrix rules to determine final priority.
@@ -338,6 +378,35 @@ def process_emails():
                     entities = analysis.get('entities', [])
                     summary_narrative = analysis.get('summary_narrative', '')
                     summary_text = summary_narrative
+                    
+                    # Check if this is a pure advert (marketing email not in subscriptions whitelist)
+                    is_pure_advert = is_advertisement(classification, sender_email, subscriptions_whitelist)
+                    
+                    if is_pure_advert:
+                        # Permanently delete pure adverts from mailbox
+                        email_service.delete_email(email_data['id'])
+                        
+                        # Log the deletion
+                        with get_db() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT INTO email_processing_log 
+                                (email_id, sender_email, subject, received_at, processing_status, 
+                                 classification, priority, sentiment, validation_result, account_id)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ''', (
+                                email_data['id'],
+                                sender_email,
+                                email_data['subject'],
+                                email_data['date'],
+                                'deleted_advert',
+                                classification,
+                                ai_priority,
+                                sentiment,
+                                'pure_advertisement',
+                                account['id']
+                            ))
+                        continue  # Skip to next email
                     
                     # Apply triaging matrix to determine final priority
                     priority = apply_triaging_matrix(

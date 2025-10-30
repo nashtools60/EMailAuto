@@ -170,6 +170,23 @@ class EmailService:
         except Exception as e:
             print(f"Error marking email as read: {e}")
     
+    def delete_email(self, email_id: str):
+        """
+        Permanently delete an email from the mailbox
+        Marks it as deleted and expunges it from the server
+        """
+        try:
+            with self.connect() as mailbox:
+                # Mark email as deleted
+                mailbox.delete([email_id])
+                # Expunge to permanently remove
+                mailbox.expunge()
+                print(f"Permanently deleted email ID: {email_id}")
+                return True
+        except Exception as e:
+            print(f"Error deleting email {email_id}: {e}")
+            return False
+    
     def send_draft_email(self, to_email: str, subject: str, body: str):
         """
         This is a placeholder for sending emails.

@@ -68,6 +68,9 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Changed email summary format from bullet points to narrative paragraphs with highlighted actions
 - 2025-10-30: Updated AI prompt to generate 2-3 sentence narrative summaries with clear "Action:" statements
 - 2025-10-30: Enhanced summary display with improved typography and action highlighting
+- 2025-10-30: Implemented automatic permanent deletion of pure advertising emails from mailbox
+- 2025-10-30: Added is_advertisement() function to identify marketing emails not in subscriptions whitelist
+- 2025-10-30: Added delete_email() method to EmailService for IMAP-based permanent deletion
 
 ## User Preferences
 - None specified yet
