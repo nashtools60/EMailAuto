@@ -6,7 +6,7 @@ import json
 
 from database import init_db, get_db
 from email_service import EmailService
-from ai_processor import classify_email, analyze_priority_sentiment, extract_entities, generate_draft_response, generate_email_summary
+from ai_processor import generate_draft_response, analyze_email_combined
 from encryption import encrypt_password, decrypt_password
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -238,25 +238,27 @@ def process_emails():
                         email_data.get('body_text', '')
                     )
                     
-                    # AI Processing
-                    classification = classify_email(email_data['subject'], normalized_content)
-                    priority_sentiment = analyze_priority_sentiment(
+                    # AI Processing - COMBINED (1 API call instead of 4)
+                    analysis = analyze_email_combined(
                         email_data['subject'],
                         normalized_content,
                         sender_email
                     )
-                    entities = extract_entities(email_data['subject'], normalized_content)
                     
-                    # Generate email summary
-                    summary_points = generate_email_summary(email_data['subject'], normalized_content)
+                    # Extract results from combined analysis
+                    classification = analysis.get('classification', 'General Inquiry')
+                    priority = analysis.get('priority', 'P2')
+                    sentiment = analysis.get('sentiment', 'Neutral')
+                    entities = analysis.get('entities', [])
+                    summary_points = analysis.get('summary_points', [])
                     summary_text = '\n'.join(f"• {point}" for point in summary_points) if summary_points else ''
                     
-                    # Generate draft response
+                    # Generate draft response (1 API call)
                     draft = generate_draft_response(
                         email_data['subject'],
                         normalized_content,
                         sender_email,
-                        classification.get('category', 'General Inquiry')
+                        classification
                     )
                     
                     # Save draft to database
@@ -274,9 +276,9 @@ def process_emails():
                             sender_email,
                             draft.get('subject'),
                             draft.get('body'),
-                            classification.get('category'),
-                            priority_sentiment.get('priority'),
-                            priority_sentiment.get('sentiment'),
+                            classification,
+                            priority,
+                            sentiment,
                             json.dumps(entities),
                             normalized_content,
                             summary_text,
@@ -297,9 +299,9 @@ def process_emails():
                             email_data['subject'],
                             email_data['date'],
                             'processed',
-                            classification.get('category'),
-                            priority_sentiment.get('priority'),
-                            priority_sentiment.get('sentiment'),
+                            classification,
+                            priority,
+                            sentiment,
                             validation_result,
                             account['id']
                         ))
@@ -311,8 +313,8 @@ def process_emails():
                         'account_name': account['account_name'],
                         'email_id': email_data['id'],
                         'draft_id': draft_id,
-                        'classification': classification.get('category'),
-                        'priority': priority_sentiment.get('priority')
+                        'classification': classification,
+                        'priority': priority
                     })
             
             except Exception as e:

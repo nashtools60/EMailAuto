@@ -43,6 +43,83 @@ class EmailSummary(BaseModel):
     summary_points: List[str]
 
 
+class CombinedEmailAnalysis(BaseModel):
+    """Combined email analysis result"""
+    classification: str
+    priority: str
+    sentiment: str
+    entities: List[ExtractedEntity]
+    summary_points: List[str]
+
+
+def analyze_email_combined(email_subject: str, email_body: str, sender_email: str) -> dict:
+    """
+    Combined AI analysis: classification, priority, sentiment, entities, and summary in ONE API call.
+    This reduces API usage from 4 separate calls to 1 call.
+    """
+    try:
+        system_prompt = """You are an expert email analyst. Analyze the email and provide:
+
+1. CLASSIFICATION: Categorize the email (e.g., "Sales Inquiry", "Technical Support", "Invoice/Billing", "HR Request", "Partnership", "Complaint", "General Inquiry", "Spam")
+
+2. PRIORITY: Assign priority level:
+   - P0 (Critical): Urgent matters requiring immediate attention (legal issues, system outages, executive requests)
+   - P1 (High): Important but not critical (sales opportunities, customer complaints, time-sensitive requests)
+   - P2 (Medium): Standard business correspondence (general inquiries, routine requests)
+   - P3 (Low): Non-urgent (newsletters, marketing, FYI emails)
+
+3. SENTIMENT: Analyze tone (Positive, Neutral, Negative, Urgent)
+
+4. ENTITIES: Extract key information (names, dates, amounts, phone numbers, addresses, companies, products)
+
+5. SUMMARY: Create 2-4 bullet points capturing key information and actionable items
+
+Return all analysis in the specified JSON format."""
+
+        prompt = f"""Sender: {sender_email}
+Subject: {email_subject}
+
+Body: {email_body}"""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-exp",
+            contents=[types.Content(role="user", parts=[types.Part(text=prompt)])],
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",
+                response_schema=CombinedEmailAnalysis,
+            ),
+        )
+
+        if response.text:
+            result = json.loads(response.text)
+            return {
+                'classification': result.get('classification', 'General Inquiry'),
+                'priority': result.get('priority', 'P2'),
+                'sentiment': result.get('sentiment', 'Neutral'),
+                'entities': result.get('entities', []),
+                'summary_points': result.get('summary_points', [])
+            }
+        
+        return {
+            'classification': 'General Inquiry',
+            'priority': 'P2',
+            'sentiment': 'Neutral',
+            'entities': [],
+            'summary_points': []
+        }
+
+    except Exception as e:
+        print(f"Error in combined email analysis: {e}")
+        return {
+            'classification': 'General Inquiry',
+            'priority': 'P2',
+            'sentiment': 'Neutral',
+            'entities': [],
+            'summary_points': []
+        }
+
+
 def generate_email_summary(email_subject: str, email_body: str) -> List[str]:
     """
     Generate a concise bullet-point summary of the email content.
