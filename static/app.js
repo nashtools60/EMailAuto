@@ -62,6 +62,7 @@ async function loadStats() {
         document.getElementById('stat-approved').textContent = stats.approved_drafts;
         document.getElementById('stat-total').textContent = stats.total_processed;
         
+        await loadMailboxFilterOptions();
         loadEmailSummaries();
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -70,8 +71,14 @@ async function loadStats() {
 
 async function loadEmailSummaries() {
     try {
-        const response = await fetch(`${API_BASE}/email-summaries`);
+        const accountSelect = document.getElementById('summary-mailbox-filter');
+        const accountId = accountSelect ? accountSelect.value : '';
+        
+        const url = accountId ? `${API_BASE}/email-summaries?account_id=${accountId}` : `${API_BASE}/email-summaries`;
+        const response = await fetch(url);
         const summaries = await response.json();
+        
+        const allEmails = [...summaries.high_priority, ...summaries.important];
         
         document.getElementById('high-priority-count').textContent = summaries.high_priority.length;
         document.getElementById('important-count').textContent = summaries.important.length;
@@ -94,26 +101,72 @@ async function loadEmailSummaries() {
     }
 }
 
+async function loadMailboxFilterOptions() {
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts`);
+        const accounts = await response.json();
+        
+        const select = document.getElementById('summary-mailbox-filter');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">All Mailboxes</option>' +
+            accounts.map(acc => `<option value="${acc.id}">${acc.account_name}</option>`).join('');
+    } catch (error) {
+        console.error('Error loading mailbox options:', error);
+    }
+}
+
 function renderEmailSummaryItem(email) {
     const slaClass = `sla-${email.sla_status}`;
-    const sentimentClass = email.sentiment ? `sentiment-${email.sentiment.toLowerCase()}` : 'sentiment-neutral';
     const slaText = email.sla_status === 'green' ? '< 24h' : email.sla_status === 'amber' ? '24-48h' : '> 48h';
+    const receivedDate = new Date(email.received_at).toLocaleString();
+    const uniqueId = `email-${email.id}`;
     
     return `
-        <div class="summary-email-item">
-            <div class="summary-email-header">
-                <div class="summary-email-from">${email.sender_name || email.sender_email}</div>
+        <div class="summary-email-item-compact">
+            <div class="summary-email-oneliner" onclick="toggleEmailDetails('${uniqueId}')">
+                <span class="summary-toggle-icon" id="${uniqueId}-icon">▶</span>
+                <span class="summary-oneliner-text">${email.original_subject}</span>
             </div>
-            <div class="summary-email-subject"><strong>${email.original_subject}</strong></div>
-            ${email.summary ? `<div class="summary-email-content">${email.summary.replace(/\n/g, '<br>')}</div>` : ''}
-            <div class="summary-email-meta">
-                <span class="summary-badge ${slaClass}">SLA: ${slaText}</span>
-                ${email.sentiment ? `<span class="summary-badge ${sentimentClass}">${email.sentiment}</span>` : ''}
-                ${email.classification ? `<span class="summary-badge" style="background: #e5e7eb; color: #374151;">${email.classification}</span>` : ''}
-                ${email.account_name ? `<span class="summary-badge" style="background: #dbeafe; color: #1e40af;">${email.account_name}</span>` : ''}
+            <div class="summary-email-details" id="${uniqueId}" style="display: none;">
+                <div class="summary-detail-row">
+                    <span class="summary-detail-label">SLA:</span>
+                    <span class="summary-badge ${slaClass}">${slaText}</span>
+                </div>
+                <div class="summary-detail-row">
+                    <span class="summary-detail-label">Date/Time:</span>
+                    <span class="summary-detail-value">${receivedDate}</span>
+                </div>
+                <div class="summary-detail-row">
+                    <span class="summary-detail-label">Sender:</span>
+                    <span class="summary-detail-value">${email.sender_email}</span>
+                </div>
+                <div class="summary-detail-row">
+                    <span class="summary-detail-label">Subject:</span>
+                    <span class="summary-detail-value">${email.original_subject}</span>
+                </div>
+                ${email.summary ? `
+                <div class="summary-detail-row">
+                    <span class="summary-detail-label">Summary:</span>
+                    <div class="summary-detail-value">${email.summary.replace(/\n/g, '<br>')}</div>
+                </div>
+                ` : ''}
             </div>
         </div>
     `;
+}
+
+function toggleEmailDetails(elementId) {
+    const details = document.getElementById(elementId);
+    const icon = document.getElementById(elementId + '-icon');
+    
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        details.style.display = 'none';
+        icon.textContent = '▶';
+    }
 }
 
 function toggleSummary(contentId) {

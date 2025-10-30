@@ -467,33 +467,50 @@ def get_stats():
 @app.route('/api/email-summaries', methods=['GET'])
 def get_email_summaries():
     """Get email summaries grouped by priority (High Priority and Important)"""
+    account_id = request.args.get('account_id', None)
+    
     with get_db() as conn:
         cursor = conn.cursor()
         
-        cursor.execute('''
-            SELECT 
-                ed.id,
-                ed.subject as original_subject,
-                ed.sender_email,
-                ed.priority,
-                ed.sentiment,
-                ed.classification,
-                ed.summary,
-                ed.created_at as received_at,
-                ea.account_name,
-                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ed.created_at))/3600 as hours_old
-            FROM email_drafts ed
-            LEFT JOIN email_accounts ea ON ed.account_id = ea.id
-            WHERE ed.status = 'pending'
-              AND ed.priority IN ('P0', 'P1', 'P2')
-            ORDER BY 
-                CASE ed.priority 
-                    WHEN 'P0' THEN 1
-                    WHEN 'P1' THEN 2
-                    WHEN 'P2' THEN 3
-                END,
-                ed.created_at DESC
-        ''')
+        if account_id:
+            cursor.execute('''
+                SELECT 
+                    ed.id,
+                    ed.subject as original_subject,
+                    ed.sender_email,
+                    ed.priority,
+                    ed.sentiment,
+                    ed.classification,
+                    ed.summary,
+                    ed.created_at as received_at,
+                    ea.account_name,
+                    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ed.created_at))/3600 as hours_old
+                FROM email_drafts ed
+                LEFT JOIN email_accounts ea ON ed.account_id = ea.id
+                WHERE ed.status = 'pending'
+                  AND ed.priority IN ('P0', 'P1', 'P2')
+                  AND ed.account_id = %s
+                ORDER BY ed.created_at ASC
+            ''', (account_id,))
+        else:
+            cursor.execute('''
+                SELECT 
+                    ed.id,
+                    ed.subject as original_subject,
+                    ed.sender_email,
+                    ed.priority,
+                    ed.sentiment,
+                    ed.classification,
+                    ed.summary,
+                    ed.created_at as received_at,
+                    ea.account_name,
+                    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ed.created_at))/3600 as hours_old
+                FROM email_drafts ed
+                LEFT JOIN email_accounts ea ON ed.account_id = ea.id
+                WHERE ed.status = 'pending'
+                  AND ed.priority IN ('P0', 'P1', 'P2')
+                ORDER BY ed.created_at ASC
+            ''')
         
         all_emails = cursor.fetchall()
         

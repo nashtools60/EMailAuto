@@ -56,6 +56,10 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: **MAJOR OPTIMIZATION**: Combined 4 separate AI calls into 1 call (analyze_email_combined function)
 - 2025-10-30: Reduced API usage by 60% - from 5 calls per email to 2 calls (analysis + draft)
 - 2025-10-30: Improved email processing speed - can now process 4-5 emails per minute instead of 2
+- 2025-10-30: Redesigned Email Summaries with mailbox filter dropdown and compact one-liner layout
+- 2025-10-30: Changed email sorting to reverse chronological order (oldest first) in Email Summaries
+- 2025-10-30: Removed Sentiment, Category, and Mailbox labels from summary display
+- 2025-10-30: Implemented expandable email details showing SLA, Date/Time, Sender, Subject, and Summary
 
 ## User Preferences
 - None specified yet
