@@ -81,6 +81,10 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Processing logs track no_action_required status for informational emails
 - 2025-10-30: Updated AI analysis to include attachment information in email summaries
 - 2025-10-30: Email summaries now mention number of attachments and file types/names
+- 2025-10-30: Added Security Alerts & Warnings category to Email Summaries page
+- 2025-10-30: Implemented bulk select and delete functionality for security alerts
+- 2025-10-30: Updated AI to classify security-related emails (alerts, warnings, threats, breaches, vulnerabilities)
+- 2025-10-30: Added /api/delete-alerts endpoint for bulk deletion of selected security alerts
 
 ## User Preferences
 - None specified yet

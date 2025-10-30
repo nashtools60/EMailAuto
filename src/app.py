@@ -673,7 +673,7 @@ def get_stats():
 
 @app.route('/api/email-summaries', methods=['GET'])
 def get_email_summaries():
-    """Get email summaries grouped by priority (High Priority and Important)"""
+    """Get email summaries grouped by priority (High Priority, Important, and Security Alerts)"""
     account_id = request.args.get('account_id', None)
     
     with get_db() as conn:
@@ -695,7 +695,7 @@ def get_email_summaries():
                 FROM email_drafts ed
                 LEFT JOIN email_accounts ea ON ed.account_id = ea.id
                 WHERE ed.status = 'pending'
-                  AND ed.priority IN ('P0', 'P1', 'P2')
+                  AND (ed.priority IN ('P0', 'P1', 'P2') OR ed.classification ILIKE '%security%' OR ed.classification ILIKE '%alert%' OR ed.classification ILIKE '%warning%')
                   AND ed.account_id = %s
                 ORDER BY ed.created_at ASC
             ''', (account_id,))
@@ -715,7 +715,7 @@ def get_email_summaries():
                 FROM email_drafts ed
                 LEFT JOIN email_accounts ea ON ed.account_id = ea.id
                 WHERE ed.status = 'pending'
-                  AND ed.priority IN ('P0', 'P1', 'P2')
+                  AND (ed.priority IN ('P0', 'P1', 'P2') OR ed.classification ILIKE '%security%' OR ed.classification ILIKE '%alert%' OR ed.classification ILIKE '%warning%')
                 ORDER BY ed.created_at ASC
             ''')
         
@@ -723,19 +723,27 @@ def get_email_summaries():
         
         high_priority = []
         important = []
+        security_alerts = []
         
         for email in all_emails:
             email_dict = dict(email)
             email_dict['sla_status'] = get_sla_status(email_dict['hours_old'])
             
-            if email['priority'] == 'P0':
+            # Classify as security alert if classification contains security/alert/warning keywords
+            classification_lower = email['classification'].lower() if email['classification'] else ''
+            is_security = any(keyword in classification_lower for keyword in ['security', 'alert', 'warning', 'threat', 'breach', 'vulnerability'])
+            
+            if is_security:
+                security_alerts.append(email_dict)
+            elif email['priority'] == 'P0':
                 high_priority.append(email_dict)
             elif email['priority'] in ('P1', 'P2'):
                 important.append(email_dict)
         
         return jsonify({
             'high_priority': high_priority,
-            'important': important
+            'important': important,
+            'security_alerts': security_alerts
         })
 
 
@@ -747,6 +755,27 @@ def get_sla_status(hours_old):
         return 'amber'
     else:
         return 'red'
+
+
+@app.route('/api/delete-alerts', methods=['POST'])
+def delete_alerts():
+    """Delete selected security alerts"""
+    data = request.json
+    alert_ids = data.get('alert_ids', [])
+    
+    if not alert_ids:
+        return jsonify({'success': False, 'error': 'No alert IDs provided'}), 400
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Delete from email_drafts
+        placeholders = ','.join(['%s'] * len(alert_ids))
+        cursor.execute(f'DELETE FROM email_drafts WHERE id IN ({placeholders})', alert_ids)
+        
+        conn.commit()
+    
+    return jsonify({'success': True, 'deleted_count': len(alert_ids)})
 
 
 @app.route('/api/email-accounts', methods=['GET', 'POST'])

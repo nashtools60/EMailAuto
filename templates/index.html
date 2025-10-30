@@ -73,6 +73,18 @@
                         </button>
                         <div id="important-emails" class="summary-content" style="display: none;"></div>
                     </div>
+
+                    <div class="summary-section">
+                        <div class="summary-header security-alert" style="display: flex; justify-content: space-between; align-items: center; cursor: default;">
+                            <button style="border: none; background: none; color: white; flex: 1; text-align: left; cursor: pointer; padding: 0;" onclick="toggleSummary('security-alerts')">
+                                <span class="summary-title">⚠️ Security Alerts & Warnings</span>
+                                <span class="summary-count" id="security-alert-count">0</span>
+                                <span class="expand-icon">▼</span>
+                            </button>
+                            <button onclick="deleteSelectedAlerts()" class="btn btn-danger" style="margin-left: 15px; padding: 8px 16px; font-size: 14px;">Delete Selected</button>
+                        </div>
+                        <div id="security-alerts" class="summary-content" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
         </div>

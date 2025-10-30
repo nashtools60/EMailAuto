@@ -78,10 +78,11 @@ async function loadEmailSummaries() {
         const response = await fetch(url);
         const summaries = await response.json();
         
-        const allEmails = [...summaries.high_priority, ...summaries.important];
+        const allEmails = [...summaries.high_priority, ...summaries.important, ...(summaries.security_alerts || [])];
         
         document.getElementById('high-priority-count').textContent = summaries.high_priority.length;
         document.getElementById('important-count').textContent = summaries.important.length;
+        document.getElementById('security-alert-count').textContent = (summaries.security_alerts || []).length;
         
         const highPriorityDiv = document.getElementById('high-priority-emails');
         if (summaries.high_priority.length > 0) {
@@ -95,6 +96,13 @@ async function loadEmailSummaries() {
             importantDiv.innerHTML = summaries.important.map(email => renderEmailSummaryItem(email)).join('');
         } else {
             importantDiv.innerHTML = '<div class="summary-empty">No important emails</div>';
+        }
+        
+        const securityAlertsDiv = document.getElementById('security-alerts');
+        if (summaries.security_alerts && summaries.security_alerts.length > 0) {
+            securityAlertsDiv.innerHTML = summaries.security_alerts.map(email => renderSecurityAlertItem(email)).join('');
+        } else {
+            securityAlertsDiv.innerHTML = '<div class="summary-empty">No security alerts</div>';
         }
     } catch (error) {
         console.error('Error loading email summaries:', error);
@@ -161,6 +169,68 @@ function toggleEmailSummary(elementId) {
         } else {
             summaryContent.style.display = 'none';
         }
+    }
+}
+
+function renderSecurityAlertItem(email) {
+    const slaClass = `sla-${email.sla_status}`;
+    const slaText = email.sla_status === 'green' ? '< 24h' : email.sla_status === 'amber' ? '24-48h' : '> 48h';
+    const receivedDate = new Date(email.received_at).toLocaleString();
+    const uniqueId = `email-alert-${email.id}`;
+    
+    return `
+        <div class="summary-email-item">
+            <div class="summary-email-line" style="display: flex; align-items: center;">
+                <input type="checkbox" class="alert-checkbox" data-alert-id="${email.id}" style="margin-right: 10px;">
+                <div style="flex: 1; cursor: pointer;" onclick="toggleEmailSummary('${uniqueId}')">
+                    <span class="summary-badge ${slaClass}">${slaText}</span>
+                    <span class="summary-line-datetime">${receivedDate}</span>
+                    <span class="summary-line-sender">${email.sender_email}</span>
+                    <span class="summary-line-subject">${email.original_subject}</span>
+                    <span class="summary-badge" style="background: #ef4444; margin-left: 10px;">${email.classification}</span>
+                </div>
+            </div>
+            ${email.summary ? `
+                <div class="summary-email-content" id="${uniqueId}" style="display: none;">
+                    <div class="summary-content-text">${email.summary}</div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+async function deleteSelectedAlerts() {
+    const checkboxes = document.querySelectorAll('.alert-checkbox:checked');
+    const alertIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-alert-id')));
+    
+    if (alertIds.length === 0) {
+        alert('Please select at least one alert to delete');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete ${alertIds.length} selected alert(s)?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/delete-alerts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alert_ids: alertIds })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Successfully deleted ${result.deleted_count} alert(s)`);
+            loadEmailSummaries();
+            loadStats();
+        } else {
+            alert('Error deleting alerts: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error deleting alerts:', error);
+        alert('Error deleting alerts');
     }
 }
 

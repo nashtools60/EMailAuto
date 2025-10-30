@@ -61,7 +61,7 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
     try:
         system_prompt = """You are an expert email analyst. Analyze the email and provide:
 
-1. CLASSIFICATION: Categorize the email (e.g., "Sales Inquiry", "Technical Support", "Invoice/Billing", "HR Request", "Partnership", "Complaint", "General Inquiry", "Newsletter", "Marketing", "Spam")
+1. CLASSIFICATION: Categorize the email (e.g., "Sales Inquiry", "Technical Support", "Invoice/Billing", "HR Request", "Partnership", "Complaint", "General Inquiry", "Newsletter", "Marketing", "Spam", "Security Alert", "Security Warning", "Breach Notification", "Vulnerability Alert", "Threat Warning")
 
 2. PRIORITY: Assign priority level:
    - P0 (Critical): Urgent matters requiring immediate attention (legal issues, system outages, executive requests)
