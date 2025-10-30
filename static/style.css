@@ -482,7 +482,7 @@ header h1 {
 }
 
 .summary-header {
-    width: 100%;
+    width: 33%;
     padding: 12px 25px;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
