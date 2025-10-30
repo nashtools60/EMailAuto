@@ -466,26 +466,24 @@ def get_email_summaries():
         cursor.execute('''
             SELECT 
                 ed.id,
-                ed.original_subject,
+                ed.subject as original_subject,
                 ed.sender_email,
-                ed.sender_name,
-                el.priority,
-                el.sentiment,
-                el.classification,
-                el.received_at,
+                ed.priority,
+                ed.sentiment,
+                ed.classification,
+                ed.created_at as received_at,
                 ea.account_name,
-                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - el.received_at))/3600 as hours_old
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ed.created_at))/3600 as hours_old
             FROM email_drafts ed
-            JOIN email_processing_log el ON ed.email_log_id = el.id
-            LEFT JOIN email_accounts ea ON el.account_id = ea.id
+            LEFT JOIN email_accounts ea ON ed.account_id = ea.id
             WHERE ed.status = 'pending'
-              AND el.priority IN ('high', 'important')
+              AND ed.priority IN ('high', 'important')
             ORDER BY 
-                CASE el.priority 
+                CASE ed.priority 
                     WHEN 'high' THEN 1
                     WHEN 'important' THEN 2
                 END,
-                el.received_at DESC
+                ed.created_at DESC
         ''')
         
         all_emails = cursor.fetchall()
