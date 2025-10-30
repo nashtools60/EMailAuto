@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: email-automation-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-emailautomation}
+      POSTGRES_USER: ${PGUSER:-emailapp}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-changeme123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-emailapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Email Automation App
+  app:
+    build: .
+    container_name: email-automation-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database connection
+      DATABASE_URL: postgresql://${PGUSER:-emailapp}:${PGPASSWORD:-changeme123}@postgres:5432/${PGDATABASE:-emailautomation}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${PGDATABASE:-emailautomation}
+      PGUSER: ${PGUSER:-emailapp}
+      PGPASSWORD: ${PGPASSWORD:-changeme123}
+      
+      # Gemini API Key (REQUIRED - get from https://aistudio.google.com/app/apikey)
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      
+      # Flask settings
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this}
+      
+    ports:
+      - "5000:5000"
+    volumes:
+      - app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/stats')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  app_logs:
+    driver: local
