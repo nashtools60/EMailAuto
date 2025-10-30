@@ -49,6 +49,29 @@
                 <h2>Email Categories</h2>
                 <div id="category-stats"></div>
             </div>
+
+            <div class="card">
+                <h2>Email Summaries by Priority</h2>
+                <div id="email-summaries">
+                    <div class="summary-section">
+                        <button class="summary-header high-priority" onclick="toggleSummary('high-priority-emails')">
+                            <span class="summary-title">🔴 High Priority Emails</span>
+                            <span class="summary-count" id="high-priority-count">0</span>
+                            <span class="expand-icon">▼</span>
+                        </button>
+                        <div id="high-priority-emails" class="summary-content" style="display: none;"></div>
+                    </div>
+
+                    <div class="summary-section">
+                        <button class="summary-header important" onclick="toggleSummary('important-emails')">
+                            <span class="summary-title">🟠 Important Emails</span>
+                            <span class="summary-count" id="important-count">0</span>
+                            <span class="expand-icon">▼</span>
+                        </button>
+                        <div id="important-emails" class="summary-content" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Review Drafts Tab -->
