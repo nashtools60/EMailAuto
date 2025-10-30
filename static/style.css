@@ -483,16 +483,16 @@ header h1 {
 
 .summary-header {
     width: 100%;
-    padding: 15px 20px;
+    padding: 12px 25px;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 16px;
+    font-size: 1em;
     font-weight: 600;
     transition: all 0.3s ease;
 }

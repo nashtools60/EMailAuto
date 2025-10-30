@@ -62,19 +62,6 @@ async function loadStats() {
         document.getElementById('stat-approved').textContent = stats.approved_drafts;
         document.getElementById('stat-total').textContent = stats.total_processed;
         
-        const categoryDiv = document.getElementById('category-stats');
-        if (stats.by_category && stats.by_category.length > 0) {
-            categoryDiv.innerHTML = '<div class="category-list">' + 
-                stats.by_category.map(cat => 
-                    `<div class="category-item">
-                        <span>${cat.classification || 'Uncategorized'}</span>
-                        <span><strong>${cat.count}</strong></span>
-                    </div>`
-                ).join('') + '</div>';
-        } else {
-            categoryDiv.innerHTML = '<p class="help-text">No emails processed yet</p>';
-        }
-        
         loadEmailSummaries();
     } catch (error) {
         console.error('Error loading stats:', error);
