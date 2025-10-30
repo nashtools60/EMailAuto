@@ -272,8 +272,8 @@ def process_emails():
                             RETURNING id
                         ''', (
                             email_data['id'],
-                            account['email_address'],
                             sender_email,
+                            account['email_address'],
                             draft.get('subject'),
                             draft.get('body'),
                             classification,
