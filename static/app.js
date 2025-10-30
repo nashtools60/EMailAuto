@@ -120,15 +120,34 @@ function renderEmailSummaryItem(email) {
     const slaClass = `sla-${email.sla_status}`;
     const slaText = email.sla_status === 'green' ? '< 24h' : email.sla_status === 'amber' ? '24-48h' : '> 48h';
     const receivedDate = new Date(email.received_at).toLocaleString();
+    const uniqueId = `email-summary-${email.id}`;
     
     return `
-        <div class="summary-email-line">
-            <span class="summary-badge ${slaClass}">${slaText}</span>
-            <span class="summary-line-datetime">${receivedDate}</span>
-            <span class="summary-line-sender">${email.sender_email}</span>
-            <span class="summary-line-subject">${email.original_subject}</span>
+        <div class="summary-email-item">
+            <div class="summary-email-line" onclick="toggleEmailSummary('${uniqueId}')">
+                <span class="summary-badge ${slaClass}">${slaText}</span>
+                <span class="summary-line-datetime">${receivedDate}</span>
+                <span class="summary-line-sender">${email.sender_email}</span>
+                <span class="summary-line-subject">${email.original_subject}</span>
+            </div>
+            ${email.summary ? `
+                <div class="summary-email-content" id="${uniqueId}" style="display: none;">
+                    <div class="summary-content-text">${email.summary.replace(/\n/g, '<br>')}</div>
+                </div>
+            ` : ''}
         </div>
     `;
+}
+
+function toggleEmailSummary(elementId) {
+    const summaryContent = document.getElementById(elementId);
+    if (summaryContent) {
+        if (summaryContent.style.display === 'none') {
+            summaryContent.style.display = 'block';
+        } else {
+            summaryContent.style.display = 'none';
+        }
+    }
 }
 
 function toggleSummary(contentId) {

@@ -663,21 +663,37 @@ header h1 {
     min-width: 200px;
 }
 
+.summary-email-item {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-email-item:last-child {
+    border-bottom: none;
+}
+
 .summary-email-line {
     display: flex;
     align-items: center;
     gap: 15px;
     padding: 12px 10px;
-    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
     transition: background 0.2s;
-}
-
-.summary-email-line:last-child {
-    border-bottom: none;
 }
 
 .summary-email-line:hover {
     background: rgba(0,0,0,0.03);
+}
+
+.summary-email-content {
+    padding: 15px 15px 15px 30px;
+    background: rgba(0,0,0,0.02);
+    border-top: 1px solid var(--border-color);
+}
+
+.summary-content-text {
+    color: var(--text-color);
+    line-height: 1.6;
+    font-size: 13px;
 }
 
 .summary-line-datetime {

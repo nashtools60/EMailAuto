@@ -60,6 +60,8 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Changed email sorting to reverse chronological order (oldest first) in Email Summaries
 - 2025-10-30: Removed Sentiment, Category, and Mailbox labels from summary display
 - 2025-10-30: Implemented single-line email display: SLA | Date/Time | Sender Email | Subject
+- 2025-10-30: Added click-to-expand functionality to display email summaries when clicking on email lines
+- 2025-10-30: Fixed sender/recipient email field swap in database insertion
 
 ## User Preferences
 - None specified yet
