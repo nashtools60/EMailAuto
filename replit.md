@@ -85,6 +85,11 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Implemented bulk select and delete functionality for security alerts
 - 2025-10-30: Updated AI to classify security-related emails (alerts, warnings, threats, breaches, vulnerabilities)
 - 2025-10-30: Added /api/delete-alerts endpoint for bulk deletion of selected security alerts
+- 2025-10-30: Created complete Docker-based self-hosted deployment package for beta testing
+- 2025-10-30: Built comprehensive installation package with Dockerfile, docker-compose.yml, and environment configuration
+- 2025-10-30: Created automated packaging script (create-beta-package.sh) for distribution
+- 2025-10-30: Wrote detailed beta installation guide (BETA_INSTALL.md) with troubleshooting
+- 2025-10-30: Created comprehensive User Manual (USER_MANUAL.md) with installation, operation, and troubleshooting guides
 
 ## User Preferences
 - None specified yet
