@@ -46,6 +46,9 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-29: Implemented SLA time-based color coding (Green: 0-24h, Amber: 24-48h, Red: >48h)
 - 2025-10-29: Created full CRUD API endpoints for actions management and template linking
 - 2025-10-29: Fixed subscription validation logic to properly detect and filter unwanted newsletters
+- 2025-10-30: Added Email Summaries Report to Dashboard with expandable sections for High Priority and Important emails
+- 2025-10-30: Implemented color-coded summary buttons (red gradient for High Priority, orange for Important)
+- 2025-10-30: Added SLA status badges and email metadata display in summary cards
 
 ## User Preferences
 - None specified yet
