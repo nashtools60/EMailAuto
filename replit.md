@@ -75,6 +75,10 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Added one-line draft display format: SLA | Date/Time | Sender Email | Subject
 - 2025-10-30: Implemented click-to-expand for draft editing with High Priority, Important, and Low Priority sections
 - 2025-10-30: Added mailbox filter dropdown to Review Drafts tab
+- 2025-10-30: Implemented AI-powered action detection - only creates drafts for emails requiring action
+- 2025-10-30: Added action_required field to CombinedEmailAnalysis schema for intelligent draft filtering
+- 2025-10-30: Informational emails (newsletters, notifications, FYI messages) now skip draft generation
+- 2025-10-30: Processing logs track no_action_required status for informational emails
 
 ## User Preferences
 - None specified yet

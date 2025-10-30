@@ -50,6 +50,7 @@ class CombinedEmailAnalysis(BaseModel):
     sentiment: str
     entities: List[ExtractedEntity]
     summary_narrative: str
+    action_required: bool
 
 
 def analyze_email_combined(email_subject: str, email_body: str, sender_email: str) -> dict:
@@ -60,7 +61,7 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
     try:
         system_prompt = """You are an expert email analyst. Analyze the email and provide:
 
-1. CLASSIFICATION: Categorize the email (e.g., "Sales Inquiry", "Technical Support", "Invoice/Billing", "HR Request", "Partnership", "Complaint", "General Inquiry", "Spam")
+1. CLASSIFICATION: Categorize the email (e.g., "Sales Inquiry", "Technical Support", "Invoice/Billing", "HR Request", "Partnership", "Complaint", "General Inquiry", "Newsletter", "Marketing", "Spam")
 
 2. PRIORITY: Assign priority level:
    - P0 (Critical): Urgent matters requiring immediate attention (legal issues, system outages, executive requests)
@@ -77,6 +78,23 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
    - Highlights the key information
    - Clearly states the ACTION REQUIRED or SUGGESTED (if any)
    Format the action as: "Action: [specific action needed]" at the end if applicable.
+
+6. ACTION_REQUIRED: Boolean (true/false) indicating if this email requires a response or action.
+   - true: Email asks questions, requests information, requires approval, needs confirmation, or expects a reply
+   - false: Email is purely informational (newsletters, notifications, updates, subscriptions, FYI messages, marketing)
+   
+   Examples of action_required = true:
+   - "Can you send me the report?"
+   - "Please confirm your attendance"
+   - "We need your approval for this project"
+   - "When can we schedule a meeting?"
+   
+   Examples of action_required = false:
+   - Newsletters and subscriptions
+   - Marketing emails
+   - Automated notifications
+   - Status updates with no questions
+   - FYI/informational emails
 
 Return all analysis in the specified JSON format."""
 
@@ -102,7 +120,8 @@ Body: {email_body}"""
                 'priority': result.get('priority', 'P2'),
                 'sentiment': result.get('sentiment', 'Neutral'),
                 'entities': result.get('entities', []),
-                'summary_narrative': result.get('summary_narrative', '')
+                'summary_narrative': result.get('summary_narrative', ''),
+                'action_required': result.get('action_required', False)
             }
         
         return {
@@ -110,7 +129,8 @@ Body: {email_body}"""
             'priority': 'P2',
             'sentiment': 'Neutral',
             'entities': [],
-            'summary_narrative': ''
+            'summary_narrative': '',
+            'action_required': False
         }
 
     except Exception as e:
@@ -120,7 +140,8 @@ Body: {email_body}"""
             'priority': 'P2',
             'sentiment': 'Neutral',
             'entities': [],
-            'summary_narrative': ''
+            'summary_narrative': '',
+            'action_required': False
         }
 
 

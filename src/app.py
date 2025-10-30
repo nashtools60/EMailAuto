@@ -378,6 +378,7 @@ def process_emails():
                     entities = analysis.get('entities', [])
                     summary_narrative = analysis.get('summary_narrative', '')
                     summary_text = summary_narrative
+                    action_required = analysis.get('action_required', False)
                     
                     # Check if this is a pure advert (marketing email not in subscriptions whitelist)
                     is_pure_advert = is_advertisement(classification, sender_email, subscriptions_whitelist)
@@ -419,7 +420,33 @@ def process_emails():
                         body_keywords
                     )
                     
-                    # Generate draft response (1 API call)
+                    # Check if email requires action (skip draft creation for informational emails)
+                    if not action_required:
+                        # Mark email as read and log as no action required
+                        email_service.mark_as_read(email_data['id'])
+                        
+                        with get_db() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT INTO email_processing_log 
+                                (email_id, sender_email, subject, received_at, processing_status, 
+                                 classification, priority, sentiment, validation_result, account_id)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ''', (
+                                email_data['id'],
+                                sender_email,
+                                email_data['subject'],
+                                email_data['date'],
+                                'no_action_required',
+                                classification,
+                                priority,
+                                sentiment,
+                                'informational_only',
+                                account['id']
+                            ))
+                        continue  # Skip draft generation
+                    
+                    # Generate draft response (1 API call) - only for actionable emails
                     draft = generate_draft_response(
                         email_data['subject'],
                         normalized_content,
