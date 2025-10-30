@@ -1,0 +1,29 @@
+# Email Automation App - Python Dependencies
+
+# Web Framework
+Flask==3.1.2
+flask-cors==6.0.1
+
+# Database
+psycopg2-binary==2.9.11
+
+# Email Processing
+imap-tools==1.11.0
+
+# AI Integration
+google-genai==1.46.0
+openai==2.6.1
+
+# Security & Encryption
+cryptography==46.0.3
+python-dotenv==1.2.1
+
+# Email Content Processing
+beautifulsoup4==4.14.2
+html2text==2025.4.15
+
+# HTTP Requests
+requests==2.32.5
+
+# Additional dependencies
+Werkzeug==3.1.3
