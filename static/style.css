@@ -510,6 +510,10 @@ header h1 {
     background: linear-gradient(135deg, #f59e0b, #d97706);
 }
 
+.summary-header.low-priority {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
 .summary-title {
     font-weight: 600;
 }

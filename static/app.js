@@ -116,6 +116,20 @@ async function loadMailboxFilterOptions() {
     }
 }
 
+function initializePage() {
+    loadStats();
+    loadDrafts();
+    loadEmailSummaries();
+    loadMailboxFilterOptions();
+    loadDraftsMailboxFilter();
+    loadConfig();
+    loadTemplates();
+    loadActions();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', initializePage);
+
 function renderEmailSummaryItem(email) {
     const slaClass = `sla-${email.sla_status}`;
     const slaText = email.sla_status === 'green' ? '< 24h' : email.sla_status === 'amber' ? '24-48h' : '> 48h';
@@ -189,62 +203,145 @@ async function processEmails() {
 }
 
 async function loadDrafts() {
-    const container = document.getElementById('drafts-list');
-    container.innerHTML = '<div class="loading">Loading drafts...</div>';
-    
     try {
-        const response = await fetch(`${API_BASE}/drafts?status=pending`);
+        const accountSelect = document.getElementById('drafts-mailbox-filter');
+        const accountId = accountSelect ? accountSelect.value : '';
+        
+        const url = accountId ? `${API_BASE}/drafts?status=pending&account_id=${accountId}` : `${API_BASE}/drafts?status=pending`;
+        const response = await fetch(url);
         const drafts = await response.json();
         
-        if (drafts.length === 0) {
-            container.innerHTML = '<p class="help-text">No pending drafts. Process emails to generate drafts.</p>';
-            return;
+        // Group drafts by priority
+        const highPriority = drafts.filter(d => d.priority === 'P0' || d.priority === 'P1');
+        const important = drafts.filter(d => d.priority === 'P2');
+        const lowPriority = drafts.filter(d => d.priority === 'P3');
+        
+        // Update counts
+        document.getElementById('high-priority-drafts-count').textContent = highPriority.length;
+        document.getElementById('important-drafts-count').textContent = important.length;
+        document.getElementById('low-priority-drafts-count').textContent = lowPriority.length;
+        
+        // Render each priority section
+        const highPriorityDiv = document.getElementById('high-priority-drafts');
+        if (highPriority.length > 0) {
+            highPriorityDiv.innerHTML = highPriority.map(draft => renderDraftItem(draft)).join('');
+        } else {
+            highPriorityDiv.innerHTML = '<div class="summary-empty">No high priority drafts</div>';
         }
         
-        container.innerHTML = drafts.map(draft => `
-            <div class="draft-card">
-                <div class="draft-header">
-                    <div>
-                        <strong>To: ${draft.recipient_email}</strong>
-                        ${draft.account_name ? `<div class="draft-meta"><span class="badge" style="background: #3b82f6;">From: ${draft.account_name}</span></div>` : ''}
-                        <div class="draft-meta">
-                            <span class="badge badge-${draft.priority.toLowerCase()}">${draft.priority}</span>
-                            <span class="badge badge-${draft.sentiment.toLowerCase()}">${draft.sentiment}</span>
-                            <span class="badge">${draft.classification}</span>
-                            ${formatSLABadge(draft.created_at, 24)}
+        const importantDiv = document.getElementById('important-drafts');
+        if (important.length > 0) {
+            importantDiv.innerHTML = important.map(draft => renderDraftItem(draft)).join('');
+        } else {
+            importantDiv.innerHTML = '<div class="summary-empty">No important drafts</div>';
+        }
+        
+        const lowPriorityDiv = document.getElementById('low-priority-drafts');
+        if (lowPriority.length > 0) {
+            lowPriorityDiv.innerHTML = lowPriority.map(draft => renderDraftItem(draft)).join('');
+        } else {
+            lowPriorityDiv.innerHTML = '<div class="summary-empty">No low priority drafts</div>';
+        }
+    } catch (error) {
+        console.error('Error loading drafts:', error);
+    }
+}
+
+async function loadDraftsMailboxFilter() {
+    try {
+        const response = await fetch(`${API_BASE}/email-accounts`);
+        const accounts = await response.json();
+        
+        const select = document.getElementById('drafts-mailbox-filter');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">All Mailboxes</option>' +
+            accounts.map(acc => `<option value="${acc.id}">${acc.account_name}</option>`).join('');
+    } catch (error) {
+        console.error('Error loading mailbox options:', error);
+    }
+}
+
+function renderDraftItem(draft) {
+    const slaClass = getSLAClass(draft.created_at);
+    const slaText = slaClass === 'sla-green' ? '< 24h' : slaClass === 'sla-amber' ? '24-48h' : '> 48h';
+    const createdDate = new Date(draft.created_at).toLocaleString();
+    const uniqueId = `draft-${draft.id}`;
+    
+    return `
+        <div class="summary-email-item">
+            <div class="summary-email-line" onclick="toggleDraftContent('${uniqueId}')">
+                <span class="summary-badge ${slaClass}">${slaText}</span>
+                <span class="summary-line-datetime">${createdDate}</span>
+                <span class="summary-line-sender">${draft.sender_email}</span>
+                <span class="summary-line-subject">${draft.subject || '(No Subject)'}</span>
+            </div>
+            <div class="draft-content-expanded" id="${uniqueId}" style="display: none;">
+                <div class="draft-card">
+                    <div class="draft-header">
+                        <div>
+                            <strong>To: ${draft.sender_email}</strong>
+                            ${draft.account_name ? `<div class="draft-meta"><span class="badge" style="background: #3b82f6;">From: ${draft.account_name}</span></div>` : ''}
+                            <div class="draft-meta">
+                                <span class="badge badge-${draft.priority.toLowerCase()}">${draft.priority}</span>
+                                <span class="badge badge-${draft.sentiment.toLowerCase()}">${draft.sentiment}</span>
+                                <span class="badge">${draft.classification}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="draft-meta">
-                        ${new Date(draft.created_at).toLocaleString()}
+                    
+                    <div class="draft-content">
+                        <strong>Subject:</strong>
+                        <input type="text" id="subject-${draft.id}" value="${draft.subject}" 
+                               style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px;">
+                        
+                        <strong style="margin-top: 15px;">Body:</strong>
+                        <textarea id="body-${draft.id}" rows="6" 
+                                  style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${draft.body}</textarea>
+                        
+                        ${draft.summary ? `
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: #667eea;">View Email Summary</summary>
+                                <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin-top: 10px;">${draft.summary}</div>
+                            </details>
+                        ` : ''}
+                        
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #667eea;">View Original Email</summary>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap;">${draft.original_content}</pre>
+                        </details>
+                    </div>
+                    
+                    <div class="draft-actions">
+                        <button onclick="updateDraft(${draft.id})" class="btn">Update Draft</button>
+                        <button onclick="approveDraft(${draft.id})" class="btn btn-success">Approve & Send</button>
+                        <button onclick="rejectDraft(${draft.id})" class="btn btn-danger">Reject</button>
                     </div>
                 </div>
-                
-                <div class="draft-content">
-                    <strong>Subject:</strong>
-                    <input type="text" id="subject-${draft.id}" value="${draft.subject}" 
-                           style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px;">
-                    
-                    <strong style="margin-top: 15px;">Body:</strong>
-                    <textarea id="body-${draft.id}" rows="6" 
-                              style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">${draft.body}</textarea>
-                    
-                    <details style="margin-top: 10px;">
-                        <summary style="cursor: pointer; color: #667eea;">View Original Email</summary>
-                        <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap;">${draft.original_content}</pre>
-                    </details>
-                </div>
-                
-                <div class="draft-actions">
-                    <button onclick="updateDraft(${draft.id})" class="btn">Update Draft</button>
-                    <button onclick="approveDraft(${draft.id})" class="btn btn-success">Approve & Send</button>
-                    <button onclick="rejectDraft(${draft.id})" class="btn btn-danger">Reject</button>
-                </div>
             </div>
-        `).join('');
-    } catch (error) {
-        container.innerHTML = '<p style="color: red;">Error loading drafts</p>';
-        console.error(error);
+        </div>
+    `;
+}
+
+function toggleDraftContent(elementId) {
+    const draftContent = document.getElementById(elementId);
+    if (draftContent) {
+        if (draftContent.style.display === 'none') {
+            draftContent.style.display = 'block';
+        } else {
+            draftContent.style.display = 'none';
+        }
     }
+}
+
+function getSLAClass(createdAt) {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const hoursDiff = (now - created) / (1000 * 60 * 60);
+    
+    if (hoursDiff <= 24) return 'sla-green';
+    if (hoursDiff <= 48) return 'sla-amber';
+    return 'sla-red';
 }
 
 async function updateDraft(draftId) {

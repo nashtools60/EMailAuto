@@ -71,6 +71,10 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Implemented automatic permanent deletion of pure advertising emails from mailbox
 - 2025-10-30: Added is_advertisement() function to identify marketing emails not in subscriptions whitelist
 - 2025-10-30: Added delete_email() method to EmailService for IMAP-based permanent deletion
+- 2025-10-30: Reorganized Review Drafts to match Email Summaries layout with priority sections
+- 2025-10-30: Added one-line draft display format: SLA | Date/Time | Sender Email | Subject
+- 2025-10-30: Implemented click-to-expand for draft editing with High Priority, Important, and Low Priority sections
+- 2025-10-30: Added mailbox filter dropdown to Review Drafts tab
 
 ## User Preferences
 - None specified yet

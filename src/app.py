@@ -501,16 +501,28 @@ def process_emails():
 def get_drafts():
     """Get all pending drafts for review"""
     status = request.args.get('status', 'pending')
+    account_id = request.args.get('account_id', '')
     
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT d.*, a.account_name, a.email_address as account_email
-            FROM email_drafts d
-            LEFT JOIN email_accounts a ON d.account_id = a.id
-            WHERE d.status = %s 
-            ORDER BY d.created_at DESC
-        ''', (status,))
+        
+        if account_id:
+            cursor.execute('''
+                SELECT d.*, a.account_name, a.email_address as account_email
+                FROM email_drafts d
+                LEFT JOIN email_accounts a ON d.account_id = a.id
+                WHERE d.status = %s AND d.account_id = %s
+                ORDER BY d.created_at DESC
+            ''', (status, account_id))
+        else:
+            cursor.execute('''
+                SELECT d.*, a.account_name, a.email_address as account_email
+                FROM email_drafts d
+                LEFT JOIN email_accounts a ON d.account_id = a.id
+                WHERE d.status = %s 
+                ORDER BY d.created_at DESC
+            ''', (status,))
+        
         drafts = cursor.fetchall()
         return jsonify(list(drafts))
 

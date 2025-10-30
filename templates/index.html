@@ -79,8 +79,43 @@
 
         <!-- Review Drafts Tab -->
         <div id="drafts" class="tab-content">
-            <h2>Review Email Drafts</h2>
-            <div id="drafts-list"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Review Email Drafts</h2>
+                <div class="summary-filter">
+                    <label for="drafts-mailbox-filter">Mailbox:</label>
+                    <select id="drafts-mailbox-filter" onchange="loadDrafts()">
+                        <option value="">All Mailboxes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="drafts-list">
+                <div class="summary-section">
+                    <button class="summary-header high-priority" onclick="toggleSummary('high-priority-drafts')">
+                        <span class="summary-title">🔴 High Priority Drafts</span>
+                        <span class="summary-count" id="high-priority-drafts-count">0</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div id="high-priority-drafts" class="summary-content" style="display: none;"></div>
+                </div>
+
+                <div class="summary-section">
+                    <button class="summary-header important" onclick="toggleSummary('important-drafts')">
+                        <span class="summary-title">🟠 Important Drafts</span>
+                        <span class="summary-count" id="important-drafts-count">0</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div id="important-drafts" class="summary-content" style="display: none;"></div>
+                </div>
+
+                <div class="summary-section">
+                    <button class="summary-header low-priority" onclick="toggleSummary('low-priority-drafts')">
+                        <span class="summary-title">⚪ Low Priority Drafts</span>
+                        <span class="summary-count" id="low-priority-drafts-count">0</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div id="low-priority-drafts" class="summary-content" style="display: none;"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Email Accounts Tab -->
