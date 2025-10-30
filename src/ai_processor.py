@@ -49,7 +49,7 @@ class CombinedEmailAnalysis(BaseModel):
     priority: str
     sentiment: str
     entities: List[ExtractedEntity]
-    summary_points: List[str]
+    summary_narrative: str
 
 
 def analyze_email_combined(email_subject: str, email_body: str, sender_email: str) -> dict:
@@ -72,7 +72,11 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
 
 4. ENTITIES: Extract key information (names, dates, amounts, phone numbers, addresses, companies, products)
 
-5. SUMMARY: Create 2-4 bullet points capturing key information and actionable items
+5. SUMMARY: Write a concise 2-3 sentence narrative summary that:
+   - Explains what the email is about
+   - Highlights the key information
+   - Clearly states the ACTION REQUIRED or SUGGESTED (if any)
+   Format the action as: "Action: [specific action needed]" at the end if applicable.
 
 Return all analysis in the specified JSON format."""
 
@@ -98,7 +102,7 @@ Body: {email_body}"""
                 'priority': result.get('priority', 'P2'),
                 'sentiment': result.get('sentiment', 'Neutral'),
                 'entities': result.get('entities', []),
-                'summary_points': result.get('summary_points', [])
+                'summary_narrative': result.get('summary_narrative', '')
             }
         
         return {
@@ -106,7 +110,7 @@ Body: {email_body}"""
             'priority': 'P2',
             'sentiment': 'Neutral',
             'entities': [],
-            'summary_points': []
+            'summary_narrative': ''
         }
 
     except Exception as e:
@@ -116,7 +120,7 @@ Body: {email_body}"""
             'priority': 'P2',
             'sentiment': 'Neutral',
             'entities': [],
-            'summary_points': []
+            'summary_narrative': ''
         }
 
 

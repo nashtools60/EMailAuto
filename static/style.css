@@ -692,8 +692,13 @@ header h1 {
 
 .summary-content-text {
     color: var(--text-color);
-    line-height: 1.6;
-    font-size: 13px;
+    line-height: 1.8;
+    font-size: 14px;
+}
+
+.summary-content-text strong {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .summary-line-datetime {

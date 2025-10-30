@@ -132,7 +132,7 @@ function renderEmailSummaryItem(email) {
             </div>
             ${email.summary ? `
                 <div class="summary-email-content" id="${uniqueId}" style="display: none;">
-                    <div class="summary-content-text">${email.summary.replace(/\n/g, '<br>')}</div>
+                    <div class="summary-content-text">${email.summary}</div>
                 </div>
             ` : ''}
         </div>

@@ -336,8 +336,8 @@ def process_emails():
                     ai_priority = analysis.get('priority', 'P2')
                     sentiment = analysis.get('sentiment', 'Neutral')
                     entities = analysis.get('entities', [])
-                    summary_points = analysis.get('summary_points', [])
-                    summary_text = '\n'.join(f"• {point}" for point in summary_points) if summary_points else ''
+                    summary_narrative = analysis.get('summary_narrative', '')
+                    summary_text = summary_narrative
                     
                     # Apply triaging matrix to determine final priority
                     priority = apply_triaging_matrix(

@@ -65,6 +65,9 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Implemented triaging matrix logic to apply sender whitelist, subject keywords, and body keywords
 - 2025-10-30: Priority override system now properly checks configured keywords and upgrades email priority accordingly
 - 2025-10-30: Subject keywords like "Urgent", "Deadline", "Critical" now correctly trigger High Priority classification
+- 2025-10-30: Changed email summary format from bullet points to narrative paragraphs with highlighted actions
+- 2025-10-30: Updated AI prompt to generate 2-3 sentence narrative summaries with clear "Action:" statements
+- 2025-10-30: Enhanced summary display with improved typography and action highlighting
 
 ## User Preferences
 - None specified yet
