@@ -457,6 +457,67 @@ def get_stats():
         })
 
 
+@app.route('/api/email-summaries', methods=['GET'])
+def get_email_summaries():
+    """Get email summaries grouped by priority (High Priority and Important)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT 
+                ed.id,
+                ed.original_subject,
+                ed.sender_email,
+                ed.sender_name,
+                el.priority,
+                el.sentiment,
+                el.classification,
+                el.received_at,
+                ea.account_name,
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - el.received_at))/3600 as hours_old
+            FROM email_drafts ed
+            JOIN email_processing_log el ON ed.email_log_id = el.id
+            LEFT JOIN email_accounts ea ON el.account_id = ea.id
+            WHERE ed.status = 'pending'
+              AND el.priority IN ('high', 'important')
+            ORDER BY 
+                CASE el.priority 
+                    WHEN 'high' THEN 1
+                    WHEN 'important' THEN 2
+                END,
+                el.received_at DESC
+        ''')
+        
+        all_emails = cursor.fetchall()
+        
+        high_priority = []
+        important = []
+        
+        for email in all_emails:
+            email_dict = dict(email)
+            email_dict['sla_status'] = get_sla_status(email_dict['hours_old'])
+            
+            if email['priority'] == 'high':
+                high_priority.append(email_dict)
+            elif email['priority'] == 'important':
+                important.append(email_dict)
+        
+        return jsonify({
+            'high_priority': high_priority,
+            'important': important
+        })
+
+
+def get_sla_status(hours_old):
+    """Get SLA status color based on age"""
+    if hours_old <= 24:
+        return 'green'
+    elif hours_old <= 48:
+        return 'amber'
+    else:
+        return 'red'
+
+
 @app.route('/api/email-accounts', methods=['GET', 'POST'])
 def manage_email_accounts():
     """Get or create email accounts"""
