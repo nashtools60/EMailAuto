@@ -6,7 +6,7 @@ import json
 
 from database import init_db, get_db
 from email_service import EmailService
-from ai_processor import classify_email, analyze_priority_sentiment, extract_entities, generate_draft_response
+from ai_processor import classify_email, analyze_priority_sentiment, extract_entities, generate_draft_response, generate_email_summary
 from encryption import encrypt_password, decrypt_password
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -247,6 +247,10 @@ def process_emails():
                     )
                     entities = extract_entities(email_data['subject'], normalized_content)
                     
+                    # Generate email summary
+                    summary_points = generate_email_summary(email_data['subject'], normalized_content)
+                    summary_text = '\n'.join(f"• {point}" for point in summary_points) if summary_points else ''
+                    
                     # Generate draft response
                     draft = generate_draft_response(
                         email_data['subject'],
@@ -261,8 +265,8 @@ def process_emails():
                         cursor.execute('''
                             INSERT INTO email_drafts 
                             (original_email_id, sender_email, recipient_email, subject, body, 
-                             classification, priority, sentiment, extracted_data, original_content, status, account_id)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                             classification, priority, sentiment, extracted_data, original_content, summary, status, account_id)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             RETURNING id
                         ''', (
                             email_data['id'],
@@ -275,6 +279,7 @@ def process_emails():
                             priority_sentiment.get('sentiment'),
                             json.dumps(entities),
                             normalized_content,
+                            summary_text,
                             'pending',
                             account['id']
                         ))
@@ -471,6 +476,7 @@ def get_email_summaries():
                 ed.priority,
                 ed.sentiment,
                 ed.classification,
+                ed.summary,
                 ed.created_at as received_at,
                 ea.account_name,
                 EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - ed.created_at))/3600 as hours_old

@@ -104,7 +104,8 @@ function renderEmailSummaryItem(email) {
             <div class="summary-email-header">
                 <div class="summary-email-from">${email.sender_name || email.sender_email}</div>
             </div>
-            <div class="summary-email-subject">${email.original_subject}</div>
+            <div class="summary-email-subject"><strong>${email.original_subject}</strong></div>
+            ${email.summary ? `<div class="summary-email-content">${email.summary.replace(/\n/g, '<br>')}</div>` : ''}
             <div class="summary-email-meta">
                 <span class="summary-badge ${slaClass}">SLA: ${slaText}</span>
                 ${email.sentiment ? `<span class="summary-badge ${sentimentClass}">${email.sentiment}</span>` : ''}

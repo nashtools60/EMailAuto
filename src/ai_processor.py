@@ -38,6 +38,49 @@ class EntityExtraction(BaseModel):
     entities: List[ExtractedEntity]
 
 
+class EmailSummary(BaseModel):
+    """Email summary with bullet points"""
+    summary_points: List[str]
+
+
+def generate_email_summary(email_subject: str, email_body: str) -> List[str]:
+    """
+    Generate a concise bullet-point summary of the email content.
+    Returns a list of 2-4 key points summarizing the email.
+    """
+    try:
+        system_prompt = """You are an expert at summarizing emails concisely.
+        
+        Generate 2-4 bullet points that capture the key information and main points of the email.
+        Each bullet point should be:
+        - Concise (1-2 sentences maximum)
+        - Focus on actionable information or key facts
+        - Clear and easy to understand
+        
+        Return only the bullet points as a JSON array of strings, without bullet symbols."""
+        
+        prompt = f"Subject: {email_subject}\n\nBody: {email_body}"
+        
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-exp",
+            contents=[types.Content(role="user", parts=[types.Part(text=prompt)])],
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json",
+                response_schema=EmailSummary,
+            ),
+        )
+        
+        if response.text:
+            result = json.loads(response.text)
+            return result.get('summary_points', [])
+        return []
+    
+    except Exception as e:
+        print(f"Error generating email summary: {e}")
+        return []
+
+
 def classify_email(email_subject: str, email_body: str) -> dict:
     """
     Classify email into categories like Sales Inquiry, Technical Support, 
