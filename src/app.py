@@ -477,11 +477,12 @@ def get_email_summaries():
             FROM email_drafts ed
             LEFT JOIN email_accounts ea ON ed.account_id = ea.id
             WHERE ed.status = 'pending'
-              AND ed.priority IN ('high', 'important')
+              AND ed.priority IN ('P0', 'P1', 'P2')
             ORDER BY 
                 CASE ed.priority 
-                    WHEN 'high' THEN 1
-                    WHEN 'important' THEN 2
+                    WHEN 'P0' THEN 1
+                    WHEN 'P1' THEN 2
+                    WHEN 'P2' THEN 3
                 END,
                 ed.created_at DESC
         ''')
@@ -495,9 +496,9 @@ def get_email_summaries():
             email_dict = dict(email)
             email_dict['sla_status'] = get_sla_status(email_dict['hours_old'])
             
-            if email['priority'] == 'high':
+            if email['priority'] == 'P0':
                 high_priority.append(email_dict)
-            elif email['priority'] == 'important':
+            elif email['priority'] in ('P1', 'P2'):
                 important.append(email_dict)
         
         return jsonify({
