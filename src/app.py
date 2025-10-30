@@ -17,6 +17,80 @@ with app.app_context():
     init_db()
 
 
+def get_priority_level(priority):
+    """Convert priority string to numeric level for comparison (lower is higher priority)"""
+    priority_levels = {
+        'P0': 0,
+        'P1': 1,
+        'P2': 2,
+        'P3': 3
+    }
+    return priority_levels.get(priority, 2)
+
+
+def apply_triaging_matrix(sender_email, subject, body, ai_priority, sender_priorities, subject_keywords, body_keywords):
+    """
+    Apply triaging matrix rules to determine final priority.
+    Priority order: Sender whitelist > Subject keywords > Body keywords > AI priority
+    Priority levels: High Priority = P0/P1, Important = P2, Low Priority = P3
+    """
+    priority_map = {
+        'High Priority': 'P0',
+        'Important': 'P2',
+        'Low Priority': 'P3'
+    }
+    
+    final_priority = ai_priority
+    
+    # Check sender whitelist (highest priority)
+    for sender_config in sender_priorities:
+        sender_pattern = sender_config['config_value'].lower()
+        category = sender_config.get('category', '')
+        
+        if sender_pattern in sender_email.lower() or sender_email.lower().endswith(sender_pattern):
+            if category in priority_map:
+                final_priority = priority_map[category]
+                break
+    
+    # Check subject keywords (second priority)
+    subject_lower = subject.lower()
+    for keyword_config in subject_keywords:
+        keywords_str = keyword_config['config_value']
+        category = keyword_config.get('category', '')
+        
+        # Split by comma to handle multiple keywords in one entry
+        keywords = [k.strip().lower() for k in keywords_str.split(',')]
+        
+        for keyword in keywords:
+            if keyword and keyword in subject_lower:
+                if category in priority_map:
+                    mapped_priority = priority_map[category]
+                    # Only upgrade priority, never downgrade
+                    if get_priority_level(mapped_priority) < get_priority_level(final_priority):
+                        final_priority = mapped_priority
+                break
+    
+    # Check body keywords (third priority)
+    body_lower = body.lower()
+    for keyword_config in body_keywords:
+        keywords_str = keyword_config['config_value']
+        category = keyword_config.get('category', '')
+        
+        # Split by comma to handle multiple keywords in one entry
+        keywords = [k.strip().lower() for k in keywords_str.split(',')]
+        
+        for keyword in keywords:
+            if keyword and keyword in body_lower:
+                if category in priority_map:
+                    mapped_priority = priority_map[category]
+                    # Only upgrade priority, never downgrade
+                    if get_priority_level(mapped_priority) < get_priority_level(final_priority):
+                        final_priority = mapped_priority
+                break
+    
+    return final_priority
+
+
 @app.route('/')
 def index():
     """Main dashboard page"""
@@ -197,7 +271,7 @@ def process_emails():
                 # Fetch new emails
                 new_emails = email_service.fetch_new_emails(limit=10)
                 
-                # Get whitelist and subscriptions whitelist
+                # Get whitelist, subscriptions whitelist, subject keywords, and body keywords
                 with get_db() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'whitelist'")
@@ -205,6 +279,18 @@ def process_emails():
                     
                     cursor.execute("SELECT config_value FROM configurations WHERE config_type = 'subscriptions_whitelist'")
                     subscriptions_whitelist = [row['config_value'] for row in cursor.fetchall()]
+                    
+                    # Get priority-based sender whitelists
+                    cursor.execute("SELECT config_value, category FROM configurations WHERE config_type = 'whitelist'")
+                    sender_priorities = cursor.fetchall()
+                    
+                    # Get priority-based subject keywords
+                    cursor.execute("SELECT config_value, category FROM configurations WHERE config_type = 'subject_keyword'")
+                    subject_keywords = cursor.fetchall()
+                    
+                    # Get priority-based body keywords
+                    cursor.execute("SELECT config_value, category FROM configurations WHERE config_type = 'body_keyword'")
+                    body_keywords = cursor.fetchall()
                 
                 # Process emails from this account
                 for email_data in new_emails:
@@ -247,11 +333,22 @@ def process_emails():
                     
                     # Extract results from combined analysis
                     classification = analysis.get('classification', 'General Inquiry')
-                    priority = analysis.get('priority', 'P2')
+                    ai_priority = analysis.get('priority', 'P2')
                     sentiment = analysis.get('sentiment', 'Neutral')
                     entities = analysis.get('entities', [])
                     summary_points = analysis.get('summary_points', [])
                     summary_text = '\n'.join(f"• {point}" for point in summary_points) if summary_points else ''
+                    
+                    # Apply triaging matrix to determine final priority
+                    priority = apply_triaging_matrix(
+                        sender_email,
+                        email_data['subject'],
+                        normalized_content,
+                        ai_priority,
+                        sender_priorities,
+                        subject_keywords,
+                        body_keywords
+                    )
                     
                     # Generate draft response (1 API call)
                     draft = generate_draft_response(
