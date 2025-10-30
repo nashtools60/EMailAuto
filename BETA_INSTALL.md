@@ -50,13 +50,13 @@ Before installation, ensure you have:
 
 ### Step 1: Extract Files
 
-Unzip the package to your preferred location:
+Extract the package to your preferred location:
 
 ```bash
 # Example
 mkdir ~/email-automation
 cd ~/email-automation
-unzip email-automation-beta.zip
+tar -xzf email-automation-beta-v1.0.tar.gz
 ```
 
 ### Step 2: Configure Environment
@@ -248,7 +248,7 @@ docker-compose up -d
 docker-compose down
 
 # Extract new package files (overwrites old ones)
-unzip -o email-automation-beta-v2.zip
+tar -xzf email-automation-beta-v2.0.tar.gz
 
 # Rebuild and start
 docker-compose up -d --build

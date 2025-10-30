@@ -24,7 +24,7 @@ if [ -z "$VERSION" ]; then
 fi
 
 PACKAGE_NAME="email-automation-beta-v${VERSION}"
-ARCHIVE_NAME="${PACKAGE_NAME}.zip"
+ARCHIVE_NAME="${PACKAGE_NAME}.tar.gz"
 
 echo -e "${YELLOW}Creating package: ${ARCHIVE_NAME}${NC}"
 echo ""
@@ -64,14 +64,21 @@ done
 
 echo ""
 echo -e "${YELLOW}Cleaning up old packages...${NC}"
+rm -f email-automation-beta*.tar.gz 2>/dev/null || true
 rm -f email-automation-beta*.zip 2>/dev/null || true
 echo -e "${GREEN}✓${NC} Cleanup complete"
 
 echo ""
 echo -e "${YELLOW}Creating archive...${NC}"
 
-# Create the zip archive
-zip -r "$ARCHIVE_NAME" \
+# Create the tar.gz archive
+tar -czf "$ARCHIVE_NAME" \
+    --exclude="*.pyc" \
+    --exclude="__pycache__" \
+    --exclude="*.env" \
+    --exclude=".env" \
+    --exclude=".git" \
+    --exclude="*.log" \
     Dockerfile \
     docker-compose.yml \
     requirements.txt \
@@ -79,14 +86,7 @@ zip -r "$ARCHIVE_NAME" \
     BETA_INSTALL.md \
     src/ \
     templates/ \
-    static/ \
-    -x "*.pyc" \
-    -x "*__pycache__*" \
-    -x "*.env" \
-    -x ".git/*" \
-    -x "*.log" \
-    -x "src/__pycache__/*" \
-    -q
+    static/
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓${NC} Archive created successfully"
@@ -114,7 +114,7 @@ echo "4. Include BETA_INSTALL.md instructions"
 echo ""
 echo -e "${YELLOW}Quick test command:${NC}"
 echo "  mkdir /tmp/beta-test && cd /tmp/beta-test"
-echo "  unzip $(pwd)/$ARCHIVE_NAME"
+echo "  tar -xzf $(pwd)/$ARCHIVE_NAME"
 echo "  Follow BETA_INSTALL.md"
 echo ""
 echo -e "${GREEN}Happy testing!${NC}"
