@@ -79,6 +79,8 @@ An intelligent email processing and automation system that monitors incoming ema
 - 2025-10-30: Added action_required field to CombinedEmailAnalysis schema for intelligent draft filtering
 - 2025-10-30: Informational emails (newsletters, notifications, FYI messages) now skip draft generation
 - 2025-10-30: Processing logs track no_action_required status for informational emails
+- 2025-10-30: Updated AI analysis to include attachment information in email summaries
+- 2025-10-30: Email summaries now mention number of attachments and file types/names
 
 ## User Preferences
 - None specified yet

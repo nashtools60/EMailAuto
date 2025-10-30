@@ -368,7 +368,9 @@ def process_emails():
                     analysis = analyze_email_combined(
                         email_data['subject'],
                         normalized_content,
-                        sender_email
+                        sender_email,
+                        email_data.get('has_attachments', False),
+                        email_data.get('attachments', [])
                     )
                     
                     # Extract results from combined analysis

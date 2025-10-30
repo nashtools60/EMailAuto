@@ -53,7 +53,7 @@ class CombinedEmailAnalysis(BaseModel):
     action_required: bool
 
 
-def analyze_email_combined(email_subject: str, email_body: str, sender_email: str) -> dict:
+def analyze_email_combined(email_subject: str, email_body: str, sender_email: str, has_attachments: bool = False, attachments: list = None) -> dict:
     """
     Combined AI analysis: classification, priority, sentiment, entities, and summary in ONE API call.
     This reduces API usage from 4 separate calls to 1 call.
@@ -76,6 +76,7 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
 5. SUMMARY: Write a concise 2-3 sentence narrative summary that:
    - Explains what the email is about
    - Highlights the key information
+   - MENTIONS ANY ATTACHMENTS (if present) - specify number and file types
    - Clearly states the ACTION REQUIRED or SUGGESTED (if any)
    Format the action as: "Action: [specific action needed]" at the end if applicable.
 
@@ -98,8 +99,16 @@ def analyze_email_combined(email_subject: str, email_body: str, sender_email: st
 
 Return all analysis in the specified JSON format."""
 
+        # Build attachment info
+        attachment_info = ""
+        if has_attachments and attachments:
+            attachment_count = len(attachments)
+            attachment_details = [f"{att.get('filename', 'unknown')} ({att.get('content_type', 'unknown type')})" for att in attachments]
+            attachment_info = f"\n\nAttachments ({attachment_count}): {', '.join(attachment_details)}"
+        
         prompt = f"""Sender: {sender_email}
 Subject: {email_subject}
+{attachment_info}
 
 Body: {email_body}"""
 
