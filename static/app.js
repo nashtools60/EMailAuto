@@ -74,8 +74,70 @@ async function loadStats() {
         } else {
             categoryDiv.innerHTML = '<p class="help-text">No emails processed yet</p>';
         }
+        
+        loadEmailSummaries();
     } catch (error) {
         console.error('Error loading stats:', error);
+    }
+}
+
+async function loadEmailSummaries() {
+    try {
+        const response = await fetch(`${API_BASE}/email-summaries`);
+        const summaries = await response.json();
+        
+        document.getElementById('high-priority-count').textContent = summaries.high_priority.length;
+        document.getElementById('important-count').textContent = summaries.important.length;
+        
+        const highPriorityDiv = document.getElementById('high-priority-emails');
+        if (summaries.high_priority.length > 0) {
+            highPriorityDiv.innerHTML = summaries.high_priority.map(email => renderEmailSummaryItem(email)).join('');
+        } else {
+            highPriorityDiv.innerHTML = '<div class="summary-empty">No high priority emails</div>';
+        }
+        
+        const importantDiv = document.getElementById('important-emails');
+        if (summaries.important.length > 0) {
+            importantDiv.innerHTML = summaries.important.map(email => renderEmailSummaryItem(email)).join('');
+        } else {
+            importantDiv.innerHTML = '<div class="summary-empty">No important emails</div>';
+        }
+    } catch (error) {
+        console.error('Error loading email summaries:', error);
+    }
+}
+
+function renderEmailSummaryItem(email) {
+    const slaClass = `sla-${email.sla_status}`;
+    const sentimentClass = email.sentiment ? `sentiment-${email.sentiment.toLowerCase()}` : 'sentiment-neutral';
+    const slaText = email.sla_status === 'green' ? '< 24h' : email.sla_status === 'amber' ? '24-48h' : '> 48h';
+    
+    return `
+        <div class="summary-email-item">
+            <div class="summary-email-header">
+                <div class="summary-email-from">${email.sender_name || email.sender_email}</div>
+            </div>
+            <div class="summary-email-subject">${email.original_subject}</div>
+            <div class="summary-email-meta">
+                <span class="summary-badge ${slaClass}">SLA: ${slaText}</span>
+                ${email.sentiment ? `<span class="summary-badge ${sentimentClass}">${email.sentiment}</span>` : ''}
+                ${email.classification ? `<span class="summary-badge" style="background: #e5e7eb; color: #374151;">${email.classification}</span>` : ''}
+                ${email.account_name ? `<span class="summary-badge" style="background: #dbeafe; color: #1e40af;">${email.account_name}</span>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function toggleSummary(contentId) {
+    const content = document.getElementById(contentId);
+    const button = content.previousElementSibling;
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        button.classList.add('expanded');
+    } else {
+        content.style.display = 'none';
+        button.classList.remove('expanded');
     }
 }
 
